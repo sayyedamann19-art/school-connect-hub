@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { downloadStudentTemplate, parseStudentWorkbook } from "@/lib/excel.client";
+import { downloadStudentTemplate, parseStudentWorkbook } from "@/lib/excel-workbook";
 import { getImportContext, runStudentImport } from "@/lib/import.functions";
 import { summarise, validateRows, type RawRow, type ValidatedRow } from "@/lib/student-import";
 
