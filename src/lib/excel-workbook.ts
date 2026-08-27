@@ -85,7 +85,12 @@ export async function downloadStudentTemplate() {
 
   const heightLetter = sheet.getColumn("Height").letter;
   const weightLetter = sheet.getColumn("Weight").letter;
-  sheet.dataValidations.add(`${heightLetter}2:${weightLetter}501`, {
+  // Range-based validation keeps the workbook small; ExcelJS types omit this API.
+  (
+    sheet as unknown as {
+      dataValidations: { add: (range: string, validation: unknown) => void };
+    }
+  ).dataValidations.add(`${heightLetter}2:${weightLetter}501`, {
     type: "decimal",
     operator: "greaterThan",
     formulae: [0],
@@ -94,6 +99,7 @@ export async function downloadStudentTemplate() {
     errorTitle: "Numbers only",
     error: "Enter height in cm and weight in kg as a number.",
   });
+
 
 
   const info = workbook.addWorksheet("Instructions");
