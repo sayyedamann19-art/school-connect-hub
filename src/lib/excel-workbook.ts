@@ -82,21 +82,25 @@ export async function downloadStudentTemplate() {
     "Parent Phone Number": "9876543210",
   });
   example.font = { italic: true, color: { argb: "FF8A94A6" }, name: "Arial" };
-  example.getCell("Student Name").note = "Example row — replace it with real data.";
 
-  for (let rowNumber = 2; rowNumber <= 500; rowNumber += 1) {
-    for (const column of ["Height", "Weight"] as ImportColumn[]) {
-      sheet.getCell(`${sheet.getColumn(column).letter}${rowNumber}`).dataValidation = {
-        type: "decimal",
-        operator: "greaterThan",
-        formulae: [0],
-        allowBlank: true,
-        showErrorMessage: true,
-        errorTitle: "Numbers only",
-        error: "Enter height in cm and weight in kg as a number.",
-      };
+  const heightLetter = sheet.getColumn("Height").letter;
+  const weightLetter = sheet.getColumn("Weight").letter;
+  // Range-based validation keeps the workbook small; ExcelJS types omit this API.
+  (
+    sheet as unknown as {
+      dataValidations: { add: (range: string, validation: unknown) => void };
     }
-  }
+  ).dataValidations.add(`${heightLetter}2:${weightLetter}501`, {
+    type: "decimal",
+    operator: "greaterThan",
+    formulae: [0],
+    allowBlank: true,
+    showErrorMessage: true,
+    errorTitle: "Numbers only",
+    error: "Enter height in cm and weight in kg as a number.",
+  });
+
+
 
   const info = workbook.addWorksheet("Instructions");
   info.columns = [{ width: 24 }, { width: 12 }, { width: 62 }, { width: 18 }];
@@ -124,16 +128,21 @@ export async function downloadStudentTemplate() {
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
+  const blob = new Blob([new Uint8Array(buffer as ArrayBuffer)], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = "school-connect-student-import-template.xlsx";
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  // Revoke after the browser has started the download.
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+
 
 export type ParsedWorkbook = {
   rows: RawRow[];
