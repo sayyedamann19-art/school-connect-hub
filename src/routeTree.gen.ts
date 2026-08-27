@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedNoAccessRouteImport } from './routes/_authenticated/no-access'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin/import'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNoAccessRoute = AuthenticatedNoAccessRouteImport.update({
   id: '/no-access',
@@ -85,6 +91,7 @@ const AuthenticatedParentStudentStudentIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/no-access': typeof AuthenticatedNoAccessRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/no-access': typeof AuthenticatedNoAccessRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/no-access': typeof AuthenticatedNoAccessRoute
   '/_authenticated/admin/import': typeof AuthenticatedAdminImportRoute
   '/_authenticated/admin/imports': typeof AuthenticatedAdminImportsRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/no-access'
     | '/admin/import'
     | '/admin/imports'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/no-access'
     | '/admin/import'
     | '/admin/imports'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_authenticated/account'
     | '/_authenticated/no-access'
     | '/_authenticated/admin/import'
     | '/_authenticated/admin/imports'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/no-access': {
       id: '/_authenticated/no-access'
@@ -249,6 +268,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedNoAccessRoute: typeof AuthenticatedNoAccessRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
   AuthenticatedAdminImportsRoute: typeof AuthenticatedAdminImportsRoute
@@ -261,6 +281,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedNoAccessRoute: AuthenticatedNoAccessRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
   AuthenticatedAdminImportsRoute: AuthenticatedAdminImportsRoute,
