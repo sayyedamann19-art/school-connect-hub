@@ -151,7 +151,7 @@ export const updateStudent = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
       if (link?.parent_id) {
-        const parentPatch: Record<string, unknown> = {};
+        const parentPatch: TablesUpdate<"profiles"> = {};
         if (data.parentName !== undefined) parentPatch['full_name'] = data.parentName;
         if (data.parentPhone !== undefined) {
           parentPatch['phone'] = data.parentPhone;
