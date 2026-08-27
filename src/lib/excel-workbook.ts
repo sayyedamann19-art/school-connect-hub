@@ -122,16 +122,21 @@ export async function downloadStudentTemplate() {
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
+  const blob = new Blob([new Uint8Array(buffer as ArrayBuffer)], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = "school-connect-student-import-template.xlsx";
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  // Revoke after the browser has started the download.
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+
 
 export type ParsedWorkbook = {
   rows: RawRow[];
