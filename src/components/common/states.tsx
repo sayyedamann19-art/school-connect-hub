@@ -13,10 +13,10 @@ export function EmptyState({
   className,
 }: {
   title: string;
-  description?: string;
+  description?: string | undefined;
   icon?: ReactNode;
   action?: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div

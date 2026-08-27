@@ -63,7 +63,8 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 function AccountMenu() {
   const { user, primaryRole } = useAuth();
   const signOut = useSignOut();
-  const name = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "Account";
+  const name =
+    (user?.user_metadata?.["full_name"] as string | undefined) ?? user?.email ?? "Account";
 
   return (
     <DropdownMenu>
