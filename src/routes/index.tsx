@@ -37,7 +37,39 @@ function LoginPage() {
   const { session, rolesLoading, primaryRole, homePath } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [grNumber, setGrNumber] = useState("");
+  const [parentPassword, setParentPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  async function handleParentSignIn(event: React.FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    // Generic failure messaging so the form can't be used to discover GR numbers.
+    const failed = () =>
+      toast.error("Couldn't sign in", {
+        description: "Check the GR number and password, or contact the school office.",
+      });
+    try {
+      const { email: alias } = await resolveParentLogin({ data: { loginId: grNumber.trim() } });
+      if (!alias) {
+        failed();
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: alias,
+        password: parentPassword,
+      });
+      if (error) {
+        failed();
+        return;
+      }
+      toast.success("Signed in");
+    } catch {
+      failed();
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   // Signed-in users go straight to the area their role owns.
   useEffect(() => {
