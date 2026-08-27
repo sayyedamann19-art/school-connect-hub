@@ -126,7 +126,7 @@ export const updateStudent = createServerFn({ method: "POST" })
     ]);
     if (!canEdit) throw new Error("You don't have permission to edit this student");
 
-    const patch: Record<string, unknown> = {
+    const patch: TablesUpdate<"students"> = {
       full_name: data.fullName,
       roll_number: data.rollNumber ?? null,
       height_cm: data.heightCm ?? null,
