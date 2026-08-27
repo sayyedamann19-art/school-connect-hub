@@ -82,21 +82,19 @@ export async function downloadStudentTemplate() {
     "Parent Phone Number": "9876543210",
   });
   example.font = { italic: true, color: { argb: "FF8A94A6" }, name: "Arial" };
-  example.getCell("Student Name").note = "Example row — replace it with real data.";
 
-  for (let rowNumber = 2; rowNumber <= 500; rowNumber += 1) {
-    for (const column of ["Height", "Weight"] as ImportColumn[]) {
-      sheet.getCell(`${sheet.getColumn(column).letter}${rowNumber}`).dataValidation = {
-        type: "decimal",
-        operator: "greaterThan",
-        formulae: [0],
-        allowBlank: true,
-        showErrorMessage: true,
-        errorTitle: "Numbers only",
-        error: "Enter height in cm and weight in kg as a number.",
-      };
-    }
-  }
+  const heightLetter = sheet.getColumn("Height").letter;
+  const weightLetter = sheet.getColumn("Weight").letter;
+  sheet.dataValidations.add(`${heightLetter}2:${weightLetter}501`, {
+    type: "decimal",
+    operator: "greaterThan",
+    formulae: [0],
+    allowBlank: true,
+    showErrorMessage: true,
+    errorTitle: "Numbers only",
+    error: "Enter height in cm and weight in kg as a number.",
+  });
+
 
   const info = workbook.addWorksheet("Instructions");
   info.columns = [{ width: 24 }, { width: 12 }, { width: 62 }, { width: 18 }];
