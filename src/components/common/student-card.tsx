@@ -35,7 +35,7 @@ export function StudentCard({
 }: {
   student: StudentCardStudent;
   subtitle?: string;
-  to?: string;
+  to?: "/parent/student/$studentId";
   className?: string;
 }) {
   const body = (
