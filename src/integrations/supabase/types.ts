@@ -224,6 +224,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          login_alias: string | null
           phone: string | null
           updated_at: string
         }
@@ -232,6 +233,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          login_alias?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -240,10 +242,61 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          login_alias?: string | null
           phone?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      student_imports: {
+        Row: {
+          created_at: string
+          created_count: number
+          details: Json
+          failed_count: number
+          file_name: string | null
+          id: string
+          status: string
+          total_records: number
+          updated_at: string
+          updated_count: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_count?: number
+          details?: Json
+          failed_count?: number
+          file_name?: string | null
+          id?: string
+          status?: string
+          total_records?: number
+          updated_at?: string
+          updated_count?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_count?: number
+          details?: Json
+          failed_count?: number
+          file_name?: string | null
+          id?: string
+          status?: string
+          total_records?: number
+          updated_at?: string
+          updated_count?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_imports_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -251,33 +304,42 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           full_name: string
+          gr_number: string
+          height_cm: number | null
           id: string
           is_active: boolean
           photo_path: string | null
           roll_number: string | null
           updated_at: string
+          weight_kg: number | null
         }
         Insert: {
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name: string
+          gr_number: string
+          height_cm?: number | null
           id?: string
           is_active?: boolean
           photo_path?: string | null
           roll_number?: string | null
           updated_at?: string
+          weight_kg?: number | null
         }
         Update: {
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name?: string
+          gr_number?: string
+          height_cm?: number | null
           id?: string
           is_active?: boolean
           photo_path?: string | null
           roll_number?: string | null
           updated_at?: string
+          weight_kg?: number | null
         }
         Relationships: [
           {
@@ -408,6 +470,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_student: { Args: { _student_id: string }; Returns: boolean }
       current_teacher_id: { Args: never; Returns: string }
       has_role: {
         Args: {
