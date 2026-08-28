@@ -1,0 +1,2 @@
+insert into public.user_roles (user_id, role) values ('9bfc5e05-28ab-477c-bae1-4e78593d7377', 'teacher') on conflict (user_id, role) do nothing;
+insert into public.teachers (profile_id, employee_code, is_active) values ('9bfc5e05-28ab-477c-bae1-4e78593d7377', 'T001', true) on conflict (profile_id) do nothing;
