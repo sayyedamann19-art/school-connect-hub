@@ -21,16 +21,14 @@ export function SectionCard({
     <section className={cn("card-surface", className)}>
       {title ? (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-            {description ? (
-              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-            ) : null}
+          <div className="min-w-0">
+            <h2 className="section-title">{title}</h2>
+            {description ? <p className="meta-text mt-1">{description}</p> : null}
           </div>
           {action}
         </header>
       ) : null}
-      <div className={cn("px-5 py-4", contentClassName)}>{children}</div>
+      <div className={cn("px-5 py-5", contentClassName)}>{children}</div>
     </section>
   );
 }
@@ -47,10 +45,15 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+    <div
+      className={cn(
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between",
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        <h1 className="page-title">{title}</h1>
+        {description ? <p className="meta-text mt-1.5">{description}</p> : null}
       </div>
       {action}
     </div>

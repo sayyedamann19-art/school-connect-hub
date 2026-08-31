@@ -1,13 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, School, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { SchoolLogo } from "@/components/brand/school-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import { gateUrl, schoolMotto, schoolName } from "@/lib/brand";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveParentLogin } from "@/lib/parent-auth.functions";
@@ -15,17 +17,17 @@ import { resolveParentLogin } from "@/lib/parent-auth.functions";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sign in — School Connect Parent & Teacher Portal" },
+      { title: "Sign in — Dawn Breakers School Parent & Teacher Portal" },
       {
         name: "description",
         content:
-          "Secure sign-in for parents, teachers and school administrators to view attendance, teacher notes and character card progress.",
+          "Secure sign-in for Dawn Breakers School parents, teachers and administrators — attendance, teacher feedback and character card progress in one place.",
       },
-      { property: "og:title", content: "Sign in — School Connect" },
+      { property: "og:title", content: "Sign in — Dawn Breakers School" },
       {
         property: "og:description",
         content:
-          "Secure sign-in for parents, teachers and school administrators to view attendance, teacher notes and character card progress.",
+          "Attendance, teacher feedback and character card progress, shared securely between Dawn Breakers School and its families.",
       },
     ],
   }),
@@ -47,7 +49,7 @@ function LoginPage() {
     // Generic failure messaging so the form can't be used to discover GR numbers.
     const failed = () =>
       toast.error("Couldn't sign in", {
-        description: "Check the GR number and password, or contact the school office.",
+        description: "Check the GR number and phone number, or contact the school office.",
       });
     try {
       const { email: alias } = await resolveParentLogin({ data: { loginId: grNumber.trim() } });
@@ -95,144 +97,171 @@ function LoginPage() {
     });
     if (result.error) {
       toast.error("Google sign-in failed", { description: result.error.message });
-      return;
     }
   }
 
+  function handleForgotPassword() {
+    toast.info("Password help", {
+      description:
+        "The school office can reset your password. Call the office or visit the front desk with your GR number.",
+    });
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <section className="hidden flex-1 flex-col justify-between bg-primary px-12 py-14 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/12">
-            <School className="size-5" />
-          </span>
-          <span className="text-base font-semibold tracking-tight">School Connect</span>
-        </div>
-        <div className="max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            One clear view of every child's school day.
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-primary-foreground/80">
-            Attendance, teacher notes and character card progress — shared securely between the
+    <div className="relative min-h-screen overflow-hidden bg-primary">
+      {/* School gate photograph: recognisable, gently softened for readability. */}
+      <img
+        src={gateUrl}
+        alt="The Dawn Breakers School gate with the school crest"
+        className="absolute inset-0 size-full object-cover object-[62%_28%] sm:object-center"
+      />
+      <div className="absolute inset-0 bg-primary/55" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/45 to-primary/85" />
+
+      <div className="relative flex min-h-screen flex-col px-5 pb-8 pt-12 sm:px-8 lg:flex-row lg:items-center lg:gap-16 lg:px-16">
+        <header className="mx-auto w-full max-w-sm text-center lg:mx-0 lg:max-w-md lg:text-left">
+          <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-center">
+            <span className="flex size-[5.5rem] items-center justify-center rounded-full bg-surface/95 p-2 shadow-[var(--shadow-float)] lg:size-24">
+              <SchoolLogo className="size-full" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-primary-foreground sm:text-3xl">
+                {schoolName}
+              </h1>
+              <p className="mt-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-gold">
+                {schoolMotto}
+              </p>
+            </div>
+          </div>
+          <p className="mx-auto mt-6 hidden max-w-sm text-sm leading-relaxed text-primary-foreground/85 lg:mx-0 lg:block">
+            Attendance, teacher feedback and character card progress — shared securely between the
             school and the families it serves.
           </p>
-        </div>
-        <p className="flex items-center gap-2 text-xs text-primary-foreground/70">
-          <ShieldCheck className="size-4" />
-          Parents only ever see their own children's records.
-        </p>
-      </section>
+        </header>
 
-      <section className="flex flex-1 items-center justify-center px-4 py-12 sm:px-8">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <School className="size-5" />
-            </span>
-            <span className="text-base font-semibold tracking-tight">School Connect</span>
+        <section className="mx-auto mt-8 w-full max-w-sm lg:mt-0">
+          <div className="rounded-3xl border border-surface/25 bg-surface/97 p-6 shadow-[var(--shadow-float)] sm:p-7">
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Sign in</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Use the account the school office set up for you.
+            </p>
+
+            <Tabs defaultValue="parent" className="mt-6">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl">
+                <TabsTrigger value="parent" className="rounded-lg">
+                  Parent
+                </TabsTrigger>
+                <TabsTrigger value="staff" className="rounded-lg">
+                  Teacher / Admin
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="parent">
+                <form onSubmit={handleParentSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="gr-number">GR Number</Label>
+                    <Input
+                      id="gr-number"
+                      autoComplete="username"
+                      inputMode="numeric"
+                      required
+                      className="h-12 rounded-xl"
+                      value={grNumber}
+                      onChange={(event) => setGrNumber(event.target.value)}
+                      placeholder="202600145"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="parent-password">Parent Phone Number</Label>
+                    <Input
+                      id="parent-password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      className="h-12 rounded-xl"
+                      value={parentPassword}
+                      onChange={(event) => setParentPassword(event.target.value)}
+                      placeholder="Registered phone number"
+                    />
+                  </div>
+                  <Button type="submit" className="h-12 w-full rounded-xl text-sm font-semibold" disabled={submitting}>
+                    {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                    Sign In
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="block w-full text-center text-xs font-semibold text-teal underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="staff">
+                <form onSubmit={handleEmailSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="h-12 rounded-xl"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="you@dawnbreakers.edu"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      className="h-12 rounded-xl"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <Button type="submit" className="h-12 w-full rounded-xl text-sm font-semibold" disabled={submitting}>
+                    {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                    Sign In
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="block w-full text-center text-xs font-semibold text-teal underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </form>
+
+                <div className="my-5 flex items-center gap-3 text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" />
+                  or
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="h-12 w-full rounded-xl text-sm font-semibold"
+                  onClick={() => void handleGoogleSignIn()}
+                >
+                  Continue with Google
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Use the account the school office set up for you.
+          <p className="mt-5 flex items-start justify-center gap-2 text-center text-xs leading-relaxed text-primary-foreground/80">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+            Parents only ever see their own children's records.
           </p>
-
-          <Tabs defaultValue="parent" className="mt-8">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="parent">Parent</TabsTrigger>
-              <TabsTrigger value="staff">Teacher / Admin</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="parent">
-              <form onSubmit={handleParentSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gr-number">GR Number (Login ID)</Label>
-                  <Input
-                    id="gr-number"
-                    autoComplete="username"
-                    required
-                    value={grNumber}
-                    onChange={(event) => setGrNumber(event.target.value)}
-                    placeholder="202600145"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="parent-password">Password</Label>
-                  <Input
-                    id="parent-password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={parentPassword}
-                    onChange={(event) => setParentPassword(event.target.value)}
-                    placeholder="Your registered phone number"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    First time here? Use your registered phone number as the password. You can
-                    change it later from My account.
-                  </p>
-                </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                  Sign in
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="staff">
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@school.edu"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                  Sign in
-                </Button>
-              </form>
-
-              <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />
-                or
-                <span className="h-px flex-1 bg-border" />
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => void handleGoogleSignIn()}
-              >
-                Continue with Google
-              </Button>
-            </TabsContent>
-          </Tabs>
-
-
-          <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
-            Accounts are created by the school. If you can't sign in, contact the school office.
-          </p>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

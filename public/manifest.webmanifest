@@ -1,13 +1,13 @@
 {
-  "name": "School Connect — Parent & Teacher Portal",
-  "short_name": "School Connect",
-  "description": "Attendance, teacher notes and character card progress for parents, teachers and school admins.",
+  "name": "Dawn Breakers School — Parent & Teacher Portal",
+  "short_name": "Dawn Breakers",
+  "description": "Attendance, teacher feedback and character card progress for Dawn Breakers School parents and teachers.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#132a5e",
+  "background_color": "#fdf8f1",
+  "theme_color": "#1b3358",
   "icons": [
     {
       "src": "/icon-192.png",
