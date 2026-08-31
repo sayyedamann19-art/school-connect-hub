@@ -1,28 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { PageHeader, SectionCard } from "@/components/common/section-card";
+import { SectionCard } from "@/components/common/section-card";
+import { StudentAvatar } from "@/components/common/student-card";
+import { roleLabel } from "@/components/layout/nav-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useSignOut } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
-      { title: "My account — School Connect" },
+      { title: "My account — Dawn Breakers School" },
       {
         name: "description",
         content:
-          "Update the password for your School Connect account. Changing it is optional — your phone number keeps working until you do.",
+          "Review the details Dawn Breakers School has on file and change your portal password whenever you like.",
       },
-      { property: "og:title", content: "My account — School Connect" },
+      { property: "og:title", content: "My account — Dawn Breakers School" },
       {
         property: "og:description",
-        content: "Update the password for your School Connect account.",
+        content: "Review your details and change your Dawn Breakers School portal password.",
       },
     ],
   }),
@@ -31,9 +33,12 @@ export const Route = createFileRoute("/_authenticated/account")({
 
 function AccountPage() {
   const { user, primaryRole } = useAuth();
+  const signOut = useSignOut();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
+  const name =
+    (user?.user_metadata?.["full_name"] as string | undefined) ?? user?.email ?? "Account";
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -54,25 +59,34 @@ function AccountPage() {
     }
     setPassword("");
     setConfirm("");
-    toast.success("Password updated", { description: "Use your new password next time you sign in." });
+    toast.success("Password updated", {
+      description: "Use your new password next time you sign in.",
+    });
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="My account"
-        description="Your sign-in details are managed by the school. You can change your password whenever you like."
-      />
+      <h1 className="page-title">My account</h1>
 
-      <SectionCard title="Account" description="Details the school has on file.">
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+      <section className="card-surface flex items-center gap-4 p-5">
+        <StudentAvatar name={name} tone="navy" className="size-14" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-foreground">{name}</p>
+          <p className="meta-text mt-0.5">
+            {primaryRole ? roleLabel[primaryRole] : "No role assigned"}
+          </p>
+        </div>
+      </section>
+
+      <SectionCard title="Details on file" description="Managed by the school office.">
+        <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Role</dt>
-            <dd className="font-medium capitalize text-foreground">{primaryRole ?? "—"}</dd>
+            <dt className="eyebrow">Role</dt>
+            <dd className="mt-1 font-semibold capitalize text-foreground">{primaryRole ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Phone on file</dt>
-            <dd className="font-medium text-foreground">
+            <dt className="eyebrow">Phone on file</dt>
+            <dd className="mt-1 font-semibold text-foreground">
               {(user?.user_metadata?.["phone"] as string | undefined) ?? "Contact the office"}
             </dd>
           </div>
@@ -90,6 +104,7 @@ function AccountPage() {
               id="new-password"
               type="password"
               autoComplete="new-password"
+              className="h-12 rounded-xl"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -101,22 +116,31 @@ function AccountPage() {
               id="confirm-password"
               type="password"
               autoComplete="new-password"
+              className="h-12 rounded-xl"
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
               required
             />
           </div>
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" className="h-12 rounded-xl" disabled={saving}>
             {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
             Update password
           </Button>
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-            Passwords are stored securely by the school's authentication service — nobody at the
-            school can read them.
+          <p className="meta-text flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+            Passwords are stored securely — nobody at the school can read them.
           </p>
         </form>
       </SectionCard>
+
+      <Button
+        variant="outline"
+        className="h-12 w-full rounded-xl text-danger sm:w-auto"
+        onClick={() => void signOut()}
+      >
+        <LogOut className="mr-2 size-4" strokeWidth={1.75} />
+        Sign out
+      </Button>
     </div>
   );
 }
