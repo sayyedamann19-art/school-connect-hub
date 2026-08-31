@@ -18,6 +18,7 @@ import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminImportsRouteImport } from './routes/_authenticated/admin/imports'
 import { Route as AuthenticatedAdminStudentsRouteImport } from './routes/_authenticated/admin/students'
 import { Route as AuthenticatedParentIndexRouteImport } from './routes/_authenticated/parent/index'
+import { Route as AuthenticatedParentChildrenRouteImport } from './routes/_authenticated/parent/children'
 import { Route as AuthenticatedTeacherIndexRouteImport } from './routes/_authenticated/teacher/index'
 import { Route as AuthenticatedTeacherImportRouteImport } from './routes/_authenticated/teacher/import'
 import { Route as AuthenticatedParentStudentStudentIdRouteImport } from './routes/_authenticated/parent/student/$studentId'
@@ -70,6 +71,12 @@ const AuthenticatedParentIndexRoute =
     path: '/parent/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedParentChildrenRoute =
+  AuthenticatedParentChildrenRouteImport.update({
+    id: '/parent/children',
+    path: '/parent/children',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTeacherIndexRoute =
   AuthenticatedTeacherIndexRouteImport.update({
     id: '/teacher/',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/parent/': typeof AuthenticatedParentIndexRoute
@@ -109,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/parent': typeof AuthenticatedParentIndexRoute
@@ -124,6 +133,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/import': typeof AuthenticatedAdminImportRoute
   '/_authenticated/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/_authenticated/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/_authenticated/parent/children': typeof AuthenticatedParentChildrenRoute
   '/_authenticated/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/parent/': typeof AuthenticatedParentIndexRoute
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/admin/import'
     | '/admin/imports'
     | '/admin/students'
+    | '/parent/children'
     | '/teacher/import'
     | '/admin/'
     | '/parent/'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/admin/import'
     | '/admin/imports'
     | '/admin/students'
+    | '/parent/children'
     | '/teacher/import'
     | '/admin'
     | '/parent'
@@ -166,6 +178,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/import'
     | '/_authenticated/admin/imports'
     | '/_authenticated/admin/students'
+    | '/_authenticated/parent/children'
     | '/_authenticated/teacher/import'
     | '/_authenticated/admin/'
     | '/_authenticated/parent/'
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedParentIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/parent/children': {
+      id: '/_authenticated/parent/children'
+      path: '/parent/children'
+      fullPath: '/parent/children'
+      preLoaderRoute: typeof AuthenticatedParentChildrenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/teacher/': {
       id: '/_authenticated/teacher/'
       path: '/teacher'
@@ -273,6 +293,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
   AuthenticatedAdminImportsRoute: typeof AuthenticatedAdminImportsRoute
   AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
+  AuthenticatedParentChildrenRoute: typeof AuthenticatedParentChildrenRoute
   AuthenticatedTeacherImportRoute: typeof AuthenticatedTeacherImportRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedParentIndexRoute: typeof AuthenticatedParentIndexRoute
@@ -286,6 +307,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
   AuthenticatedAdminImportsRoute: AuthenticatedAdminImportsRoute,
   AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
+  AuthenticatedParentChildrenRoute: AuthenticatedParentChildrenRoute,
   AuthenticatedTeacherImportRoute: AuthenticatedTeacherImportRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedParentIndexRoute: AuthenticatedParentIndexRoute,
