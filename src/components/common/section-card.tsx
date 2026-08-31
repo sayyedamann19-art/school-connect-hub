@@ -45,10 +45,15 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+    <div
+      className={cn(
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between",
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        <h1 className="page-title">{title}</h1>
+        {description ? <p className="meta-text mt-1.5">{description}</p> : null}
       </div>
       {action}
     </div>
