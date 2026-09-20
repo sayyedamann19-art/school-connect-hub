@@ -3,7 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { StatusBadge } from "@/components/common/status-badge";
-import { ChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
+import { MockChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
 import { TraitBar } from "@/components/parent/progress-visuals";
 import { characterByChild, children } from "@/lib/mock/school-data";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ function CharacterPage() {
         </p>
       </header>
 
-      <ChildSwitcher activeId={activeId} onSelect={setActiveId} />
+      <MockChildSwitcher activeId={activeId} onSelect={setActiveId} />
 
       <section className="card-surface overflow-hidden bg-primary p-5 text-primary-foreground">
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-gold">

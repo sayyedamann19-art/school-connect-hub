@@ -1,3 +1,4 @@
+import { children as mockChildren, type MockChild } from "@/lib/mock/school-data";
 import { StudentAvatar } from "@/components/common/student-card";
 import { cn } from "@/lib/utils";
 
@@ -47,4 +48,27 @@ export function ChildSwitcher({
       })}
     </div>
   );
+}
+
+/* --- Demo-data switcher, still used by the not-yet-connected modules --- */
+
+/** Mock-backed switcher for the attendance / feedback / character demo screens. */
+export function MockChildSwitcher({
+  activeId,
+  onSelect,
+}: {
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <ChildSwitcher
+      childrenList={mockChildren.map((child) => ({ id: child.id, full_name: child.name }))}
+      activeId={activeId}
+      onSelect={onSelect}
+    />
+  );
+}
+
+export function useActiveChild(activeId: string): MockChild {
+  return mockChildren.find((child) => child.id === activeId) ?? mockChildren[0]!;
 }
