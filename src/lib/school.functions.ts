@@ -66,6 +66,8 @@ export const getMyChildren = createServerFn({ method: "GET" })
         .select(
           "relationship, created_at, student:students(id, full_name, gr_number, roll_number, date_of_birth, photo_path, is_active, height_cm, weight_kg, class:classes(id, name, division, academic_year))",
         )
+        // Scope to this parent's own links: staff accounts can also read wider rows.
+        .eq("parent_id", userId)
         .order("created_at", { ascending: true }),
       supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
     ]);
