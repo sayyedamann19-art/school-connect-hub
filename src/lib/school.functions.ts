@@ -74,7 +74,12 @@ export const getMyChildren = createServerFn({ method: "GET" })
 
     if (linkResult.error) throw new Error(linkResult.error.message);
 
-    const links = (linkResult.data ?? []).filter((row) => row.student);
+    const seen = new Set<string>();
+    const links = (linkResult.data ?? []).filter((row) => {
+      if (!row.student || seen.has(row.student.id)) return false;
+      seen.add(row.student.id);
+      return true;
+    });
     const studentIds = links.map((row) => row.student!.id);
 
     if (studentIds.length === 0) {
