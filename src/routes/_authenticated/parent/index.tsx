@@ -1,20 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
 import { useState } from "react";
 
-import { ChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
+import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing } from "@/components/parent/progress-visuals";
 import { StudentAvatar } from "@/components/common/student-card";
 import { StatusBadge } from "@/components/common/status-badge";
 import { CountTile } from "@/components/common/stat-card";
-import {
-  attendanceByChild,
-  characterByChild,
-  children,
-  feedback,
-  parentName,
-  updates,
-} from "@/lib/mock/school-data";
+import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
+import { getMyChildren } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/")({
   head: () => ({
@@ -35,53 +30,107 @@ export const Route = createFileRoute("/_authenticated/parent/")({
   component: ParentHome,
 });
 
-const toneBadge = {
-  positive: "success",
-  neutral: "info",
-  concern: "warning",
-} as const;
+function classLine(child: { class: { name: string; division: string | null } | null }) {
+  if (!child.class) return "Class not assigned";
+  return child.class.division
+    ? `Class ${child.class.name}-${child.class.division}`
+    : `Class ${child.class.name}`;
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 function ParentHome() {
-  const [activeId, setActiveId] = useState(children[0]!.id);
-  const child = useActiveChild(activeId);
-  const attendance = attendanceByChild[child.id]!;
-  const character = characterByChild[child.id]!;
-  const recent = feedback.filter((item) => item.childId === child.id).slice(0, 2);
-  const unread = updates.filter((item) => item.unread).length;
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["parent", "children"],
+    queryFn: () => getMyChildren(),
+  });
+
+  if (isLoading) return <LoadingCards count={3} />;
+
+  if (isError) {
+    return (
+      <ErrorState
+        title="We couldn't load your children"
+        description="Please try again in a moment."
+        onRetry={() => void refetch()}
+      />
+    );
+  }
+
+  const childrenList = data?.children ?? [];
+
+  if (childrenList.length === 0) {
+    return (
+      <div className="space-y-5">
+        <header>
+          <p className="eyebrow">Welcome</p>
+          <h1 className="page-title mt-1">{data?.parentName ?? "Parent"}</h1>
+        </header>
+        <EmptyState
+          title="No children linked to your account yet"
+          description="Please contact the school office so your child's record can be linked to this login."
+        />
+      </div>
+    );
+  }
+
+  const child = childrenList.find((entry) => entry.id === activeId) ?? childrenList[0]!;
+  const attendance = child.attendance;
 
   return (
     <div className="space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0">
           <p className="eyebrow">Good morning</p>
-          <h1 className="page-title mt-1 truncate">{parentName}</h1>
+          <h1 className="page-title mt-1 truncate">{data?.parentName ?? "Parent"}</h1>
         </div>
-        {unread > 0 ? (
-          <Link to="/parent/notifications" className="shrink-0">
-            <StatusBadge tone="danger">{unread} new updates</StatusBadge>
-          </Link>
-        ) : null}
       </header>
 
-      <ChildSwitcher activeId={activeId} onSelect={setActiveId} />
+      <ChildSwitcher childrenList={childrenList} activeId={child.id} onSelect={setActiveId} />
 
       <section className="card-surface overflow-hidden">
         <div className="flex items-center gap-4 border-b border-border p-5">
-          <StudentAvatar name={child.name} tone={child.photoTone} className="size-14" />
-          <div className="min-w-0">
-            <p className="truncate text-base font-bold text-foreground">{child.name}</p>
+          <StudentAvatar
+            name={child.full_name}
+            src={child.photoUrl}
+            tone="teal"
+            className="size-14"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-bold text-foreground">{child.full_name}</p>
             <p className="meta-text mt-0.5">
-              Class {child.className}-{child.division} · Roll {child.rollNumber}
+              {classLine(child)}
+              {child.roll_number ? ` · Roll ${child.roll_number}` : ""} · GR {child.gr_number}
             </p>
           </div>
+          <Link to="/parent/student/$studentId" params={{ studentId: child.id }}>
+            <StatusBadge tone="primary">View profile</StatusBadge>
+          </Link>
         </div>
 
         <div className="flex flex-col items-center gap-5 p-5 sm:flex-row sm:items-center sm:gap-7">
-          <AttendanceRing percent={attendance.percent} />
+          <AttendanceRing percent={attendance.percent ?? 0} />
           <div className="w-full space-y-3">
             <div>
-              <p className="section-title">{attendance.verdict}</p>
-              <p className="meta-text mt-1">{attendance.month} so far</p>
+              <p className="section-title">
+                {attendance.total === 0
+                  ? "No attendance recorded yet"
+                  : attendance.percent !== null && attendance.percent >= 90
+                    ? "Excellent attendance"
+                    : attendance.percent !== null && attendance.percent >= 75
+                      ? "Attendance needs a little care"
+                      : "Attendance needs attention"}
+              </p>
+              <p className="meta-text mt-1">
+                {attendance.total} day{attendance.total === 1 ? "" : "s"} recorded
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <CountTile label="Present" value={attendance.present} tone="teal" />
@@ -110,7 +159,7 @@ function ParentHome() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-bold text-foreground">Character card</span>
-            <span className="meta-text">{character.score} points this term</span>
+            <span className="meta-text">{child.characterScore} points recorded</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
@@ -123,23 +172,16 @@ function ParentHome() {
             View all
           </Link>
         </div>
-        {recent.map((item) => (
+        {child.recentNotes.map((item) => (
           <article key={item.id} className="card-surface p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-foreground">{item.teacher}</p>
-                <p className="meta-text mt-0.5">
-                  {item.subject} · {item.date}
-                </p>
-              </div>
-              <StatusBadge tone={toneBadge[item.tone]}>
-                {item.tone === "positive" ? "Praise" : item.tone === "concern" ? "Attention" : "Note"}
-              </StatusBadge>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-foreground/90">{item.message}</p>
+            <p className="meta-text">
+              {item.subject ? `${item.subject} · ` : ""}
+              {formatDate(item.note_date)}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/90">{item.note}</p>
           </article>
         ))}
-        {recent.length === 0 ? (
+        {child.recentNotes.length === 0 ? (
           <div className="card-quiet flex items-center gap-3 p-4">
             <MessageSquareText className="size-4 text-muted-foreground" strokeWidth={1.75} />
             <p className="meta-text">No feedback shared yet this term.</p>
