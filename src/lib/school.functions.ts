@@ -147,6 +147,34 @@ export const getMyChildren = createServerFn({ method: "GET" })
     return { parentName: profileResult.data?.full_name ?? null, children };
   });
 
+export type AttendanceRecord = {
+  date: string;
+  status: "present" | "absent" | "late" | "left_early" | "other";
+  note: string | null;
+};
+
+/**
+ * Every attendance record for one student, read as the signed-in user so the
+ * existing RLS policy on `attendance` is the only access boundary. Parents can
+ * only ever receive rows for their own linked children.
+ */
+export const getStudentAttendance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ studentId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ records: AttendanceRecord[] }> => {
+    const { supabase } = context;
+
+    const { data: rows, error } = await supabase
+      .from("attendance")
+      .select("date, status, note")
+      .eq("student_id", data.studentId)
+      .order("date", { ascending: true });
+
+    if (error) throw new Error(error.message);
+
+    return { records: (rows ?? []) as AttendanceRecord[] };
+  });
+
 /** Profile shell data for one student: identity plus light summary counts. */
 export const getStudentOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
