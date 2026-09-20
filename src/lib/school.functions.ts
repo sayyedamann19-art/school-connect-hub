@@ -6,11 +6,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const PHOTO_BUCKET = "student-photos";
 const PHOTO_TTL_SECONDS = 60 * 60;
 
-type SupabaseClient = Parameters<
-  Parameters<ReturnType<typeof createServerFn>["handler"]>[0]
->[0] extends never
-  ? never
-  : never;
 
 /** Signed URLs for private student photos, keyed by storage path. Read as the user. */
 async function signPhotoPaths(
