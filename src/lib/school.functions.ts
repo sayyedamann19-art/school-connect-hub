@@ -274,3 +274,171 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       parentLinks: await count("parent_students"),
     };
   });
+
+export type TeacherClass = {
+  id: string;
+  name: string;
+  division: string | null;
+  academic_year: string;
+  subject: string | null;
+  is_class_teacher: boolean;
+};
+
+/** Classes assigned to the signed-in teacher. RLS limits rows to their own assignments. */
+export const getMyTeachingClasses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ classes: TeacherClass[] }> => {
+    const { supabase } = context;
+
+    const { data, error } = await supabase
+      .from("class_teachers")
+      .select("subject, is_class_teacher, class:classes(id, name, division, academic_year)");
+    if (error) throw new Error(error.message);
+
+    const seen = new Set<string>();
+    const classes: TeacherClass[] = [];
+    for (const row of data ?? []) {
+      if (!row.class || seen.has(row.class.id)) continue;
+      seen.add(row.class.id);
+      classes.push({
+        id: row.class.id,
+        name: row.class.name,
+        division: row.class.division,
+        academic_year: row.class.academic_year,
+        subject: row.subject,
+        is_class_teacher: row.is_class_teacher,
+      });
+    }
+    return { classes };
+  });
+
+export type AttendanceStatusValue = "present" | "absent" | "late" | "left_early" | "other";
+
+export type RosterEntry = {
+  id: string;
+  full_name: string;
+  roll_number: string | null;
+  gr_number: string;
+  photoUrl: string | null;
+  status: AttendanceStatusValue | null;
+  note: string | null;
+};
+
+const sheetInput = z.object({
+  classId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+/** Ensure the caller actually teaches this class; RLS is still the hard boundary. */
+async function assertTeachesClass(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  classId: string,
+) {
+  const { data, error } = await supabase.rpc("teaches_class", { _class_id: classId });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You are not assigned to this class");
+}
+
+/** Roster for one assigned class on one date, with any attendance already recorded. */
+export const getClassAttendanceSheet = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => sheetInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ roster: RosterEntry[] }> => {
+    const { supabase } = context;
+    await assertTeachesClass(supabase, data.classId);
+
+    const { data: students, error } = await supabase
+      .from("students")
+      .select("id, full_name, roll_number, gr_number, photo_path, is_active")
+      .eq("class_id", data.classId)
+      .eq("is_active", true)
+      .order("roll_number", { ascending: true })
+      .order("full_name", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const ids = (students ?? []).map((s) => s.id);
+    if (ids.length === 0) return { roster: [] };
+
+    const [existing, photoMap] = await Promise.all([
+      supabase
+        .from("attendance")
+        .select("student_id, status, note")
+        .eq("date", data.date)
+        .in("student_id", ids),
+      signPhotoPaths(
+        supabase,
+        (students ?? []).map((s) => s.photo_path).filter(Boolean) as string[],
+      ),
+    ]);
+
+    const byStudent = new Map(
+      (existing.data ?? []).map((row) => [row.student_id, row as { status: AttendanceStatusValue; note: string | null }]),
+    );
+
+    return {
+      roster: (students ?? []).map((student) => {
+        const record = byStudent.get(student.id);
+        return {
+          id: student.id,
+          full_name: student.full_name,
+          roll_number: student.roll_number,
+          gr_number: student.gr_number,
+          photoUrl: student.photo_path ? (photoMap[student.photo_path] ?? null) : null,
+          status: record?.status ?? null,
+          note: record?.note ?? null,
+        };
+      }),
+    };
+  });
+
+const saveInput = sheetInput.extend({
+  marks: z
+    .array(
+      z.object({
+        studentId: z.string().uuid(),
+        status: z.enum(["present", "absent", "late", "left_early", "other"]),
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+
+/**
+ * Save attendance for one assigned class on one date. Upserts on the
+ * (student_id, date) unique index so re-saving edits the existing row instead
+ * of creating duplicates.
+ */
+export const saveClassAttendance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => saveInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ saved: number }> => {
+    const { supabase, userId } = context;
+    await assertTeachesClass(supabase, data.classId);
+
+    // Only students actually in the selected class may be written to.
+    const { data: students, error: studentError } = await supabase
+      .from("students")
+      .select("id")
+      .eq("class_id", data.classId);
+    if (studentError) throw new Error(studentError.message);
+
+    const allowed = new Set((students ?? []).map((s) => s.id));
+    const rows = data.marks
+      .filter((mark) => allowed.has(mark.studentId))
+      .map((mark) => ({
+        student_id: mark.studentId,
+        date: data.date,
+        status: mark.status,
+        recorded_by: userId,
+      }));
+
+    if (rows.length === 0) throw new Error("No students from this class were included");
+
+    const { error } = await supabase
+      .from("attendance")
+      .upsert(rows, { onConflict: "student_id,date" });
+    if (error) throw new Error(error.message);
+
+    return { saved: rows.length };
+  });
