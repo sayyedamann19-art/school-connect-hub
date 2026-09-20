@@ -8,6 +8,13 @@
       "when": 1789933999437,
       "tag": "0000_seed_demo_attendance_records",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789934162110,
+      "tag": "0001_vary_demo_attendance_second_child",
+      "breakpoints": true
     }
   ]
 }
