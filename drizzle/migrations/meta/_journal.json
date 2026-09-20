@@ -15,6 +15,13 @@
       "when": 1789934162110,
       "tag": "0001_vary_demo_attendance_second_child",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789934906958,
+      "tag": "0002_attendance_unique_student_date",
+      "breakpoints": true
     }
   ]
 }
