@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states
 import { StatusBadge } from "@/components/common/status-badge";
 import { classLabel, initials } from "@/components/common/student-card";
 import { RoleGate } from "@/components/layout/role-gate";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStudentOverview } from "@/lib/school.functions";
 
@@ -73,12 +73,12 @@ function StudentProfile() {
     );
   }
 
-  const { student, summary } = data;
+  const { student, summary, photoUrl } = data;
 
   return (
     <div className="space-y-6">
       <Link
-        to="/parent"
+        to="/parent/children"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" />
@@ -87,6 +87,9 @@ function StudentProfile() {
 
       <div className="card-surface flex flex-wrap items-center gap-4 p-5">
         <Avatar className="size-16 border border-border">
+          {photoUrl ? (
+            <AvatarImage src={photoUrl} alt={student.full_name} className="object-cover" />
+          ) : null}
           <AvatarFallback className="bg-primary-soft text-base font-semibold text-primary">
             {initials(student.full_name)}
           </AvatarFallback>
@@ -94,6 +97,7 @@ function StudentProfile() {
         <div className="min-w-0 flex-1">
           <PageHeader title={student.full_name} description={classLabel(student.class)} />
           <div className="mt-3 flex flex-wrap gap-2">
+            <StatusBadge tone="primary">GR {student.gr_number}</StatusBadge>
             {student.roll_number ? (
               <StatusBadge tone="primary">Roll {student.roll_number}</StatusBadge>
             ) : null}
@@ -133,10 +137,19 @@ function StudentProfile() {
             <DefinitionList
               items={[
                 { label: "Full name", value: student.full_name },
+                { label: "GR number", value: student.gr_number },
                 { label: "Class / division", value: classLabel(student.class) },
                 { label: "Roll number", value: student.roll_number ?? "—" },
                 { label: "Date of birth", value: formatDate(student.date_of_birth) },
                 { label: "Academic year", value: student.class?.academic_year ?? "—" },
+                {
+                  label: "Height",
+                  value: student.height_cm === null ? "—" : `${student.height_cm} cm`,
+                },
+                {
+                  label: "Weight",
+                  value: student.weight_kg === null ? "—" : `${student.weight_kg} kg`,
+                },
                 { label: "Photo", value: student.photo_path ? "On file" : "Not uploaded" },
               ]}
             />

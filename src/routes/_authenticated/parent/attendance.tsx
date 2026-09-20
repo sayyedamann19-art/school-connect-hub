@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { CountTile } from "@/components/common/stat-card";
-import { ChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
+import { MockChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
 import { AttendanceRing, TrendChart } from "@/components/parent/progress-visuals";
 import { attendanceByChild, children, type AttendanceState } from "@/lib/mock/school-data";
 import { cn } from "@/lib/utils";
@@ -54,7 +54,7 @@ function AttendancePage() {
         </p>
       </header>
 
-      <ChildSwitcher activeId={activeId} onSelect={setActiveId} />
+      <MockChildSwitcher activeId={activeId} onSelect={setActiveId} />
 
       <section className="card-surface flex flex-col items-center gap-5 p-5 sm:flex-row sm:gap-7">
         <AttendanceRing percent={attendance.percent} />

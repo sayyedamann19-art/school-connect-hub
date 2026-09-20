@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { EmptyState } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
-import { ChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
+import { MockChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
 import { children, feedback } from "@/lib/mock/school-data";
 
 export const Route = createFileRoute("/_authenticated/parent/feedback")({
@@ -46,7 +46,7 @@ function FeedbackPage() {
         </p>
       </header>
 
-      <ChildSwitcher activeId={activeId} onSelect={setActiveId} />
+      <MockChildSwitcher activeId={activeId} onSelect={setActiveId} />
 
       {items.length === 0 ? (
         <EmptyState
