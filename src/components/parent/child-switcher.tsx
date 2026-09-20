@@ -1,20 +1,27 @@
 import { StudentAvatar } from "@/components/common/student-card";
-import { children, type MockChild } from "@/lib/mock/school-data";
 import { cn } from "@/lib/utils";
+
+export type SwitchableChild = {
+  id: string;
+  full_name: string;
+  photoUrl?: string | null;
+};
 
 /** Sibling switcher: a single parent account can hold several children. */
 export function ChildSwitcher({
+  childrenList,
   activeId,
   onSelect,
 }: {
+  childrenList: SwitchableChild[];
   activeId: string;
   onSelect: (id: string) => void;
 }) {
-  if (children.length < 2) return null;
+  if (childrenList.length < 2) return null;
 
   return (
     <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-      {children.map((child) => {
+      {childrenList.map((child) => {
         const active = child.id === activeId;
         return (
           <button
@@ -29,18 +36,15 @@ export function ChildSwitcher({
             )}
           >
             <StudentAvatar
-              name={child.name}
-              tone={child.photoTone}
+              name={child.full_name}
+              src={child.photoUrl ?? null}
+              tone="teal"
               className="size-7 border-0"
             />
-            {child.name.split(" ")[0]}
+            {child.full_name.split(" ")[0]}
           </button>
         );
       })}
     </div>
   );
-}
-
-export function useActiveChild(activeId: string): MockChild {
-  return children.find((child) => child.id === activeId) ?? children[0]!;
 }

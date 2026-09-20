@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
 import { StatusBadge } from "@/components/common/status-badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export type StudentCardStudent = {
@@ -36,18 +36,21 @@ const toneClasses = {
 
 export type AvatarTone = keyof typeof toneClasses;
 
-/** Student portrait placeholder: initials on a calm tinted surface. */
+/** Student portrait: real photo when on file, otherwise initials on a tinted surface. */
 export function StudentAvatar({
   name,
   tone = "navy",
   className,
+  src,
 }: {
   name: string;
   tone?: AvatarTone;
   className?: string;
+  src?: string | null;
 }) {
   return (
     <Avatar className={cn("size-12 border border-border", className)}>
+      {src ? <AvatarImage src={src} alt={name} className="object-cover" /> : null}
       <AvatarFallback className={cn("font-bold", toneClasses[tone])}>
         {initials(name)}
       </AvatarFallback>
