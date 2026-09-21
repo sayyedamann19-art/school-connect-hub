@@ -29,6 +29,13 @@
       "when": 1789979260231,
       "tag": "0003_add_get_student_notes_function",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789980654716,
+      "tag": "0004_add_get_student_character_points",
+      "breakpoints": true
     }
   ]
 }
