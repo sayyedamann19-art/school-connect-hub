@@ -442,3 +442,151 @@ export const saveClassAttendance = createServerFn({ method: "POST" })
 
     return { saved: rows.length };
   });
+
+/* ---------------- Teacher feedback (teacher_notes) ---------------- */
+
+export type StudentNote = {
+  id: string;
+  note: string;
+  note_date: string;
+  subject: string | null;
+  teacher_id: string | null;
+  teacher_name: string;
+};
+
+/**
+ * Notes for one student with the recording teacher's name. Reads through the
+ * `get_student_notes` SQL function, which only returns rows when the caller is
+ * an admin, a parent of the student, or teaches the student.
+ */
+export const getStudentNotes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ studentId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ notes: StudentNote[] }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase.rpc("get_student_notes", {
+      _student_id: data.studentId,
+    });
+    if (error) throw new Error(error.message);
+    return { notes: (rows ?? []) as StudentNote[] };
+  });
+
+/** Active students in one class the caller teaches. */
+export const getClassStudents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ classId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    await assertTeachesClass(supabase, data.classId);
+
+    const { data: students, error } = await supabase
+      .from("students")
+      .select("id, full_name, roll_number, gr_number, photo_path")
+      .eq("class_id", data.classId)
+      .eq("is_active", true)
+      .order("roll_number", { ascending: true })
+      .order("full_name", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const photoMap = await signPhotoPaths(
+      supabase,
+      (students ?? []).map((s) => s.photo_path).filter(Boolean) as string[],
+    );
+
+    return {
+      students: (students ?? []).map((student) => ({
+        id: student.id,
+        full_name: student.full_name,
+        roll_number: student.roll_number,
+        gr_number: student.gr_number,
+        photoUrl: student.photo_path ? (photoMap[student.photo_path] ?? null) : null,
+      })),
+    };
+  });
+
+const noteInput = z.object({
+  studentId: z.string().uuid(),
+  note: z.string().trim().min(3).max(2000),
+  noteDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  subject: z.string().trim().max(60).optional(),
+  classId: z.string().uuid().optional(),
+});
+
+/** Record a feedback note. RLS requires the caller to teach this student. */
+export const saveTeacherNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => noteInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ id: string }> => {
+    const { supabase } = context;
+
+    const { data: teacherId, error: teacherError } = await supabase.rpc("current_teacher_id");
+    if (teacherError) throw new Error(teacherError.message);
+    if (!teacherId) throw new Error("Your account is not set up as a teacher");
+
+    const { data: teaches, error: scopeError } = await supabase.rpc("teaches_student", {
+      _student_id: data.studentId,
+    });
+    if (scopeError) throw new Error(scopeError.message);
+    if (!teaches) throw new Error("This student is not in a class you teach");
+
+    const { data: row, error } = await supabase
+      .from("teacher_notes")
+      .insert({
+        student_id: data.studentId,
+        teacher_id: teacherId,
+        class_id: data.classId ?? null,
+        subject: data.subject && data.subject.length > 0 ? data.subject : null,
+        note: data.note,
+        note_date: data.noteDate,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    return { id: row.id };
+  });
+
+/** Edit a note the caller recorded. RLS restricts this to the author (or admin). */
+export const updateTeacherNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        note: z.string().trim().min(3).max(2000),
+        noteDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        subject: z.string().trim().max(60).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ updated: number }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("teacher_notes")
+      .update({
+        note: data.note,
+        note_date: data.noteDate,
+        subject: data.subject && data.subject.length > 0 ? data.subject : null,
+      })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if ((rows ?? []).length === 0) throw new Error("You can only edit notes you recorded");
+    return { updated: rows!.length };
+  });
+
+/** Delete a note the caller recorded. RLS restricts this to the author (or admin). */
+export const deleteTeacherNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ deleted: number }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("teacher_notes")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if ((rows ?? []).length === 0) throw new Error("You can only delete notes you recorded");
+    return { deleted: rows!.length };
+  });
