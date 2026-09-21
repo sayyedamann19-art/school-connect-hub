@@ -590,3 +590,118 @@ export const deleteTeacherNote = createServerFn({ method: "POST" })
     if ((rows ?? []).length === 0) throw new Error("You can only delete notes you recorded");
     return { deleted: rows!.length };
   });
+
+/* ---------------- Character card (character_points) ---------------- */
+
+export type CharacterPoint = {
+  id: string;
+  points: number;
+  reason: string | null;
+  awarded_on: string;
+  teacher_id: string | null;
+  teacher_name: string;
+};
+
+/**
+ * Character point entries for one student with the awarding teacher's name.
+ * Reads through the `get_student_character_points` SQL function, which only
+ * returns rows when the caller is an admin, a parent of the student, or
+ * teaches the student.
+ */
+export const getStudentCharacterPoints = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ studentId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ entries: CharacterPoint[] }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase.rpc("get_student_character_points", {
+      _student_id: data.studentId,
+    });
+    if (error) throw new Error(error.message);
+    return { entries: (rows ?? []) as CharacterPoint[] };
+  });
+
+const pointInput = z.object({
+  studentId: z.string().uuid(),
+  points: z.number().int().min(-50).max(50).refine((value) => value !== 0, "Point value is required"),
+  reason: z.string().trim().min(3).max(500),
+  awardedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+/** Award character points. RLS requires the caller to teach this student. */
+export const saveCharacterPoint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => pointInput.parse(input))
+  .handler(async ({ data, context }): Promise<{ id: string }> => {
+    const { supabase } = context;
+
+    const { data: teacherId, error: teacherError } = await supabase.rpc("current_teacher_id");
+    if (teacherError) throw new Error(teacherError.message);
+    if (!teacherId) throw new Error("Your account is not set up as a teacher");
+
+    const { data: teaches, error: scopeError } = await supabase.rpc("teaches_student", {
+      _student_id: data.studentId,
+    });
+    if (scopeError) throw new Error(scopeError.message);
+    if (!teaches) throw new Error("This student is not in a class you teach");
+
+    const { data: row, error } = await supabase
+      .from("character_points")
+      .insert({
+        student_id: data.studentId,
+        teacher_id: teacherId,
+        points: data.points,
+        reason: data.reason,
+        awarded_on: data.awardedOn,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    return { id: row.id };
+  });
+
+/** Edit an entry the caller recorded. RLS restricts this to the author (or admin). */
+export const updateCharacterPoint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        points: z
+          .number()
+          .int()
+          .min(-50)
+          .max(50)
+          .refine((value) => value !== 0, "Point value is required"),
+        reason: z.string().trim().min(3).max(500),
+        awardedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ updated: number }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("character_points")
+      .update({ points: data.points, reason: data.reason, awarded_on: data.awardedOn })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if ((rows ?? []).length === 0) throw new Error("You can only edit entries you recorded");
+    return { updated: rows!.length };
+  });
+
+/** Delete an entry the caller recorded. RLS restricts this to the author (or admin). */
+export const deleteCharacterPoint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ deleted: number }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("character_points")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if ((rows ?? []).length === 0) throw new Error("You can only delete entries you recorded");
+    return { deleted: rows!.length };
+  });
