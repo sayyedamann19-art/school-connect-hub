@@ -47,6 +47,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
   teacher: [
     { label: "Classes", to: "/teacher", icon: GraduationCap },
     { label: "Attendance", to: "/teacher/attendance", icon: CalendarCheck },
+    { label: "Feedback", to: "/teacher/feedback", icon: MessageSquareText },
     { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
