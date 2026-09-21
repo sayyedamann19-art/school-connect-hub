@@ -1,11 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareText } from "lucide-react";
 import { useState } from "react";
 
-import { EmptyState } from "@/components/common/states";
-import { StatusBadge } from "@/components/common/status-badge";
-import { MockChildSwitcher, useActiveChild } from "@/components/parent/child-switcher";
-import { children, feedback } from "@/lib/mock/school-data";
+import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
+import { ChildSwitcher } from "@/components/parent/child-switcher";
+import { getMyChildren, getStudentNotes } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/feedback")({
   head: () => ({
@@ -26,29 +26,84 @@ export const Route = createFileRoute("/_authenticated/parent/feedback")({
   component: FeedbackPage,
 });
 
-const toneMeta = {
-  positive: { tone: "success", label: "Praise" },
-  neutral: { tone: "info", label: "Note" },
-  concern: { tone: "warning", label: "Needs attention" },
-} as const;
+function formatDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
 
 function FeedbackPage() {
-  const [activeId, setActiveId] = useState(children[0]!.id);
-  const child = useActiveChild(activeId);
-  const items = feedback.filter((item) => item.childId === child.id);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const childrenQuery = useQuery({
+    queryKey: ["parent", "children"],
+    queryFn: () => getMyChildren(),
+  });
+
+  const childrenList = childrenQuery.data?.children ?? [];
+  const activeChildId = activeId ?? childrenList[0]?.id ?? null;
+  const child = childrenList.find((row) => row.id === activeChildId) ?? null;
+
+  const notesQuery = useQuery({
+    queryKey: ["parent", "student-notes", activeChildId],
+    enabled: Boolean(activeChildId),
+    queryFn: () => getStudentNotes({ data: { studentId: activeChildId! } }),
+  });
+
+  if (childrenQuery.isLoading) return <LoadingCards count={2} />;
+
+  if (childrenQuery.isError) {
+    return (
+      <ErrorState
+        title="We couldn't load teacher feedback"
+        description="Please try again in a moment."
+        onRetry={() => void childrenQuery.refetch()}
+      />
+    );
+  }
+
+  if (!child) {
+    return (
+      <EmptyState
+        title="No children linked to your account yet"
+        description="Please contact the school office so your child's record can be linked to this login."
+      />
+    );
+  }
+
+  const notes = notesQuery.data?.notes ?? [];
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="page-title">Teacher feedback</h1>
         <p className="meta-text mt-1.5">
-          {child.name} · Class {child.className}-{child.division}
+          {child.full_name}
+          {child.class
+            ? ` · Class ${child.class.division ? `${child.class.name}-${child.class.division}` : child.class.name}`
+            : ""}
         </p>
       </header>
 
-      <MockChildSwitcher activeId={activeId} onSelect={setActiveId} />
+      <ChildSwitcher
+        childrenList={childrenList.map((row) => ({
+          id: row.id,
+          full_name: row.full_name,
+          photoUrl: row.photoUrl,
+        }))}
+        activeId={child.id}
+        onSelect={setActiveId}
+      />
 
-      {items.length === 0 ? (
+      {notesQuery.isLoading ? (
+        <LoadingCards count={2} />
+      ) : notesQuery.isError ? (
+        <ErrorState
+          title="We couldn't load teacher feedback"
+          description="Please try again in a moment."
+          onRetry={() => void notesQuery.refetch()}
+        />
+      ) : notes.length === 0 ? (
         <EmptyState
           title="No feedback yet"
           description="Teachers share notes here through the term."
@@ -56,22 +111,18 @@ function FeedbackPage() {
         />
       ) : (
         <ol className="space-y-3">
-          {items.map((item) => {
-            const meta = toneMeta[item.tone];
-            return (
-              <li key={item.id} className="card-surface p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-foreground">{item.teacher}</p>
-                    <p className="meta-text mt-0.5">{item.subject}</p>
-                  </div>
-                  <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+          {notes.map((item) => (
+            <li key={item.id} className="card-surface p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-foreground">{item.teacher_name}</p>
+                  {item.subject ? <p className="meta-text mt-0.5">{item.subject}</p> : null}
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-foreground/90">{item.message}</p>
-                <p className="meta-text mt-3">{item.date}</p>
-              </li>
-            );
-          })}
+                <p className="meta-text shrink-0">{formatDate(item.note_date)}</p>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-foreground/90">{item.note}</p>
+            </li>
+          ))}
         </ol>
       )}
     </div>
