@@ -23,6 +23,7 @@ export type NavPath =
   | "/parent/character"
   | "/teacher"
   | "/teacher/attendance"
+  | "/teacher/feedback"
   | "/admin"
   | "/admin/students"
   | "/admin/import"
