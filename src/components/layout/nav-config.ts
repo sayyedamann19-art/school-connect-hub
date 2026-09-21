@@ -8,6 +8,7 @@ import {
   Users,
   Bell,
   History,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 
