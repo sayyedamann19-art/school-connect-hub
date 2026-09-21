@@ -9,6 +9,7 @@ import {
   Bell,
   History,
   MessageSquareText,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ export type NavPath =
   | "/teacher"
   | "/teacher/attendance"
   | "/teacher/feedback"
+  | "/teacher/character"
   | "/admin"
   | "/admin/students"
   | "/admin/import"
@@ -49,6 +51,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Classes", to: "/teacher", icon: GraduationCap },
     { label: "Attendance", to: "/teacher/attendance", icon: CalendarCheck },
     { label: "Feedback", to: "/teacher/feedback", icon: MessageSquareText },
+    { label: "Character", to: "/teacher/character", icon: Award },
     { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
