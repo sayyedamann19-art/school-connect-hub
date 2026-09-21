@@ -472,6 +472,17 @@ export type Database = {
     Functions: {
       can_edit_student: { Args: { _student_id: string }; Returns: boolean }
       current_teacher_id: { Args: never; Returns: string }
+      get_student_character_points: {
+        Args: { _student_id: string }
+        Returns: {
+          awarded_on: string
+          id: string
+          points: number
+          reason: string
+          teacher_id: string
+          teacher_name: string
+        }[]
+      }
       get_student_notes: {
         Args: { _student_id: string }
         Returns: {
