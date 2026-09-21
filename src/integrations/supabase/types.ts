@@ -472,6 +472,17 @@ export type Database = {
     Functions: {
       can_edit_student: { Args: { _student_id: string }; Returns: boolean }
       current_teacher_id: { Args: never; Returns: string }
+      get_student_notes: {
+        Args: { _student_id: string }
+        Returns: {
+          id: string
+          note: string
+          note_date: string
+          subject: string
+          teacher_id: string
+          teacher_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
