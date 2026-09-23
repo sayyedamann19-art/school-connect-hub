@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, Pencil, Upload } from "lucide-react";
+import { Loader2, Pencil, Plus, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { ErrorState, LoadingCards } from "@/components/common/states";
@@ -34,7 +35,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { adminCreateStudent, adminSetStudentActive } from "@/lib/admin.functions";
 import { listClasses, listManagedStudents, updateStudent } from "@/lib/students.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/students")({
   head: () => ({
