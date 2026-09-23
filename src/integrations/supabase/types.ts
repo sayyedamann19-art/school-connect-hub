@@ -248,6 +248,50 @@ export type Database = {
         }
         Relationships: []
       }
+      school_updates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_updates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_imports: {
         Row: {
           created_at: string
