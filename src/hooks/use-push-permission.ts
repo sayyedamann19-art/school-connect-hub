@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type PermissionState = "unsupported" | "default" | "granted" | "denied";
 
-const ASKED_KEY = "school-connect:notification-prompted";
+const ASKED_KEY = "dawn-breakers:notification-prompted";
 
 /**
  * Notification permission foundation.

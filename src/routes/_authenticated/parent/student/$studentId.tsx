@@ -15,13 +15,13 @@ import { getStudentOverview } from "@/lib/school.functions";
 export const Route = createFileRoute("/_authenticated/parent/student/$studentId")({
   head: () => ({
     meta: [
-      { title: "Student profile — School Connect" },
+      { title: "Student profile — Dawn Breakers School" },
       {
         name: "description",
         content:
           "Student profile with class details, attendance summary, teacher notes and character card score.",
       },
-      { property: "og:title", content: "Student profile — School Connect" },
+      { property: "og:title", content: "Student profile — Dawn Breakers School" },
       {
         property: "og:description",
         content: "Class details, attendance summary, teacher notes and character card score.",

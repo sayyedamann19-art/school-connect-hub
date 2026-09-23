@@ -4,12 +4,12 @@ import { ShieldAlert } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/no-access")({
   head: () => ({
     meta: [
-      { title: "No access yet — School Connect" },
+      { title: "No access yet — Dawn Breakers School" },
       {
         name: "description",
         content: "Your account has no school role assigned yet. Contact the school office.",
       },
-      { property: "og:title", content: "No access yet — School Connect" },
+      { property: "og:title", content: "No access yet — Dawn Breakers School" },
       {
         property: "og:description",
         content: "Your account has no school role assigned yet.",

@@ -18,13 +18,13 @@ import { listImportHistory } from "@/lib/import.functions";
 export const Route = createFileRoute("/_authenticated/admin/imports")({
   head: () => ({
     meta: [
-      { title: "Import history — School Connect Admin" },
+      { title: "Import history — Dawn Breakers School Admin" },
       {
         name: "description",
         content:
           "Review every student Excel import: who uploaded it, how many records were added, updated or skipped.",
       },
-      { property: "og:title", content: "Import history — School Connect Admin" },
+      { property: "og:title", content: "Import history — Dawn Breakers School Admin" },
       {
         property: "og:description",
         content: "Every student import with uploader, totals and skipped rows.",

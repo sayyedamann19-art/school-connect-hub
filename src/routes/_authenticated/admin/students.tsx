@@ -39,13 +39,13 @@ import { listClasses, listManagedStudents, updateStudent } from "@/lib/students.
 export const Route = createFileRoute("/_authenticated/admin/students")({
   head: () => ({
     meta: [
-      { title: "Student records — School Connect Admin" },
+      { title: "Student records — Dawn Breakers School Admin" },
       {
         name: "description",
         content:
           "Search, review and edit student records: GR number, class, roll number, height, weight and parent contact details.",
       },
-      { property: "og:title", content: "Student records — School Connect Admin" },
+      { property: "og:title", content: "Student records — Dawn Breakers School Admin" },
       {
         property: "og:description",
         content: "Search and edit student records, class assignment and parent contact details.",

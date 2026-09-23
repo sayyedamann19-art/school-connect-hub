@@ -13,13 +13,13 @@ import { getTeacherOverview } from "@/lib/school.functions";
 export const Route = createFileRoute("/_authenticated/teacher/")({
   head: () => ({
     meta: [
-      { title: "My classes — School Connect Teacher Area" },
+      { title: "My classes — Dawn Breakers School Teacher Area" },
       {
         name: "description",
         content:
           "Teacher area for assigned classes and students, with permitted notes and character card points.",
       },
-      { property: "og:title", content: "My classes — School Connect" },
+      { property: "og:title", content: "My classes — Dawn Breakers School" },
       {
         property: "og:description",
         content: "Assigned classes and students, with permitted notes and character card points.",
