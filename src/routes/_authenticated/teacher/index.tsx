@@ -43,13 +43,34 @@ type StudentRow = {
   full_name: string;
   roll_number: string | null;
   class_id: string | null;
+  is_active: boolean;
 };
 
 function TeacherArea() {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["teacher", "overview"],
     queryFn: () => getTeacherOverview(),
   });
+
+  const activeMutation = useMutation({
+    mutationFn: (payload: { studentId: string; isActive: boolean }) =>
+      setStudentActive({ data: payload }),
+    onSuccess: (_result, variables) => {
+      toast.success(
+        variables.isActive
+          ? "Student marked as studying again"
+          : "Student marked as left — their records are kept",
+      );
+      void queryClient.invalidateQueries({ queryKey: ["teacher"] });
+      void queryClient.invalidateQueries({ queryKey: ["parent"] });
+    },
+    onError: (error) =>
+      toast.error("Couldn't update the student", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
 
   if (isLoading) return <LoadingCards count={3} />;
 
