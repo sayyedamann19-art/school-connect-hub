@@ -237,7 +237,7 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       ? ((
           await supabase
             .from("students")
-            .select("id, full_name, roll_number, class_id, photo_path")
+            .select("id, full_name, roll_number, class_id, photo_path, is_active")
             .in("class_id", classIds)
             .order("full_name")
         ).data ?? [])

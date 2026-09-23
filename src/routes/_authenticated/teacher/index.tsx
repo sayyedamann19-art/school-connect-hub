@@ -1,6 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { GraduationCap, Users } from "lucide-react";
+import { toast } from "sonner";
+
+import { Switch } from "@/components/ui/switch";
+import { setStudentActive } from "@/lib/students.functions";
+
 
 import { DataTable } from "@/components/common/data-table";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
@@ -38,13 +43,34 @@ type StudentRow = {
   full_name: string;
   roll_number: string | null;
   class_id: string | null;
+  is_active: boolean;
 };
 
 function TeacherArea() {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["teacher", "overview"],
     queryFn: () => getTeacherOverview(),
   });
+
+  const activeMutation = useMutation({
+    mutationFn: (payload: { studentId: string; isActive: boolean }) =>
+      setStudentActive({ data: payload }),
+    onSuccess: (_result, variables) => {
+      toast.success(
+        variables.isActive
+          ? "Student marked as studying again"
+          : "Student marked as left — their records are kept",
+      );
+      void queryClient.invalidateQueries({ queryKey: ["teacher"] });
+      void queryClient.invalidateQueries({ queryKey: ["parent"] });
+    },
+    onError: (error) =>
+      toast.error("Couldn't update the student", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
 
   if (isLoading) return <LoadingCards count={3} />;
 
@@ -119,6 +145,25 @@ function TeacherArea() {
               key: "class",
               header: "Class",
               cell: (row) => (row.class_id ? (classNameById.get(row.class_id) ?? "—") : "—"),
+            },
+            {
+              key: "active",
+              header: "Studying",
+              cell: (row) => (
+                <Switch
+                  checked={row.is_active}
+                  onCheckedChange={(checked) => {
+                    if (
+                      checked ||
+                      window.confirm(
+                        `Mark ${row.full_name} as left the school? Attendance, feedback and character records are kept.`,
+                      )
+                    ) {
+                      activeMutation.mutate({ studentId: row.id, isActive: checked });
+                    }
+                  }}
+                />
+              ),
             },
           ]}
           rows={students}

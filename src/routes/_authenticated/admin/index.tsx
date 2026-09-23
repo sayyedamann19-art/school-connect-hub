@@ -57,6 +57,24 @@ const managementSections: { title: string; description: string; to: NavTarget; c
     cta: "Manage teachers",
   },
   {
+    title: "Parents",
+    description: "Search parent accounts, link or unlink children and suspend a login.",
+    to: "/admin/parents",
+    cta: "Manage parents",
+  },
+  {
+    title: "Attendance reports",
+    description: "Class attendance totals and percentages for any date range.",
+    to: "/admin/attendance",
+    cta: "Open reports",
+  },
+  {
+    title: "School updates",
+    description: "Write and publish notices that parents read in the Updates area.",
+    to: "/admin/updates",
+    cta: "Manage updates",
+  },
+  {
     title: "Excel import",
     description: "Bulk-add students from the official workbook, and review past imports.",
     to: "/admin/import",

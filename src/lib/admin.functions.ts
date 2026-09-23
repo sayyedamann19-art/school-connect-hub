@@ -398,3 +398,258 @@ export const adminSetStudentActive = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export type AdminParentStudent = {
+  linkId: string;
+  studentId: string;
+  fullName: string;
+  grNumber: string;
+  rollNumber: string | null;
+  isActive: boolean;
+  classLabel: string | null;
+  relationship: string;
+};
+
+export type AdminParent = {
+  id: string;
+  name: string;
+  phone: string | null;
+  loginAlias: string | null;
+  isActive: boolean;
+  students: AdminParentStudent[];
+};
+
+/** Parent accounts with their linked students. Admin only. */
+export const adminListParents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ search: z.string().trim().max(80).optional() }).parse(input ?? {}))
+  .handler(async ({ data, context }): Promise<AdminParent[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: roleRows, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "parent");
+    if (roleError) throw new Error(roleError.message);
+
+    const parentIds = [...new Set((roleRows ?? []).map((row) => row.user_id))];
+    if (parentIds.length === 0) return [];
+
+    const [{ data: profiles }, { data: links }, authList] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, full_name, phone, login_alias").in("id", parentIds),
+      supabaseAdmin
+        .from("parent_students")
+        .select(
+          "id, parent_id, relationship, student:students(id, full_name, gr_number, roll_number, is_active, class:classes(name, division))",
+        )
+        .in("parent_id", parentIds),
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
+    const bannedById = new Map<string, boolean>();
+    for (const user of authList.data?.users ?? []) {
+      const banned = (user as { banned_until?: string | null }).banned_until;
+      bannedById.set(user.id, Boolean(banned && new Date(banned) > new Date()));
+    }
+
+    const term = data.search?.toLowerCase() ?? "";
+
+    const parents: AdminParent[] = (profiles ?? []).map((profile) => ({
+      id: profile.id,
+      name: profile.full_name ?? "Parent",
+      phone: profile.phone,
+      loginAlias: profile.login_alias,
+      isActive: !(bannedById.get(profile.id) ?? false),
+      students: (links ?? [])
+        .filter((link) => link.parent_id === profile.id && link.student)
+        .map((link) => ({
+          linkId: link.id,
+          studentId: link.student!.id,
+          fullName: link.student!.full_name,
+          grNumber: link.student!.gr_number,
+          rollNumber: link.student!.roll_number,
+          isActive: link.student!.is_active,
+          classLabel: link.student!.class
+            ? `${link.student!.class.name}${link.student!.class.division ? `-${link.student!.class.division}` : ""}`
+            : null,
+          relationship: link.relationship,
+        })),
+    }));
+
+    const filtered = term
+      ? parents.filter(
+          (parent) =>
+            parent.name.toLowerCase().includes(term) ||
+            (parent.phone ?? "").toLowerCase().includes(term) ||
+            parent.students.some(
+              (student) =>
+                student.fullName.toLowerCase().includes(term) ||
+                student.grNumber.toLowerCase().includes(term),
+            ),
+        )
+      : parents;
+
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+/** Links an existing student to an existing parent account. */
+export const adminLinkParentStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        parentId: z.string().uuid(),
+        studentId: z.string().uuid(),
+        relationship: z.string().trim().max(30).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase.from("parent_students").insert({
+      parent_id: data.parentId,
+      student_id: data.studentId,
+      ...(data.relationship ? { relationship: data.relationship } : {}),
+    });
+    if (error) {
+      throw new Error(
+        error.code === "23505" ? "That student is already linked to this parent" : error.message,
+      );
+    }
+    return { ok: true };
+  });
+
+/** Removes a parent–student link. The student record itself is untouched. */
+export const adminUnlinkParentStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ linkId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase.from("parent_students").delete().eq("id", data.linkId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Suspends or restores a parent login without deleting any records. */
+export const adminSetParentActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ parentId: z.string().uuid(), isActive: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.parentId, {
+      ban_duration: data.isActive ? "none" : "876000h",
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export type AttendanceReportRow = {
+  studentId: string;
+  fullName: string;
+  rollNumber: string | null;
+  grNumber: string;
+  present: number;
+  absent: number;
+  late: number;
+  leftEarly: number;
+  other: number;
+  total: number;
+  percent: number | null;
+};
+
+export type AttendanceReport = {
+  rows: AttendanceReportRow[];
+  totals: {
+    present: number;
+    absent: number;
+    late: number;
+    leftEarly: number;
+    other: number;
+    total: number;
+    percent: number | null;
+  };
+};
+
+/** Class attendance report for a date range, built from the existing records. */
+export const adminAttendanceReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<AttendanceReport> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabase } = context;
+
+    const { data: students, error } = await supabase
+      .from("students")
+      .select("id, full_name, roll_number, gr_number")
+      .eq("class_id", data.classId)
+      .order("roll_number")
+      .order("full_name");
+    if (error) throw new Error(error.message);
+
+    const studentIds = (students ?? []).map((student) => student.id);
+    const records = studentIds.length
+      ? ((
+          await supabase
+            .from("attendance")
+            .select("student_id, status")
+            .in("student_id", studentIds)
+            .gte("date", data.from)
+            .lte("date", data.to)
+        ).data ?? [])
+      : [];
+
+    const rows: AttendanceReportRow[] = (students ?? []).map((student) => {
+      const own = records.filter((record) => record.student_id === student.id);
+      const count = (status: string) => own.filter((record) => record.status === status).length;
+      const present = count("present");
+      const total = own.length;
+      return {
+        studentId: student.id,
+        fullName: student.full_name,
+        rollNumber: student.roll_number,
+        grNumber: student.gr_number,
+        present,
+        absent: count("absent"),
+        late: count("late"),
+        leftEarly: count("left_early"),
+        other: count("other"),
+        total,
+        percent: total ? Math.round((present / total) * 100) : null,
+      };
+    });
+
+    const sum = (key: keyof AttendanceReportRow) =>
+      rows.reduce((acc, row) => acc + (typeof row[key] === "number" ? (row[key] as number) : 0), 0);
+    const total = sum("total");
+    const present = sum("present");
+
+    return {
+      rows,
+      totals: {
+        present,
+        absent: sum("absent"),
+        late: sum("late"),
+        leftEarly: sum("leftEarly"),
+        other: sum("other"),
+        total,
+        percent: total ? Math.round((present / total) * 100) : null,
+      },
+    };
+  });

@@ -36,6 +36,13 @@
       "when": 1789980654716,
       "tag": "0004_add_get_student_character_points",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790169609114,
+      "tag": "0005_create_school_updates",
+      "breakpoints": true
     }
   ]
 }
