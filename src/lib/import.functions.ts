@@ -4,12 +4,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { classKey, validateRows, type ImportContext, type RawRow } from "@/lib/student-import";
 import { IMPORT_COLUMNS } from "@/lib/student-import";
+import { parentAlias } from "@/lib/parent-domain";
 
-const PARENT_DOMAIN = "parents.schoolconnect.app";
-
-function parentAlias(phone: string) {
-  return `parent.${phone}@${PARENT_DOMAIN}`;
-}
 
 function currentAcademicYear() {
   const now = new Date();
