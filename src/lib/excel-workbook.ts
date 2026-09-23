@@ -134,7 +134,7 @@ export async function downloadStudentTemplate() {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "school-connect-student-import-template.xlsx";
+  anchor.download = "dawn-breakers-student-import-template.xlsx";
   anchor.rel = "noopener";
   document.body.appendChild(anchor);
   anchor.click();
