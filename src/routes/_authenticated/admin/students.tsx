@@ -230,9 +230,173 @@ function StudentsAdmin() {
         classes={classesQuery.data ?? []}
         onClose={() => setEditing(null)}
       />
+      <AddStudentDialog
+        open={adding}
+        classes={classesQuery.data ?? []}
+        onClose={() => setAdding(false)}
+      />
     </div>
   );
 }
+
+function AddStudentDialog({
+  open,
+  classes,
+  onClose,
+}: {
+  open: boolean;
+  classes: Awaited<ReturnType<typeof listClasses>>;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const empty = {
+    fullName: "",
+    grNumber: "",
+    rollNumber: "",
+    classId: "none",
+    dateOfBirth: "",
+    heightCm: "",
+    weightKg: "",
+    parentName: "",
+    parentPhone: "",
+  };
+  const [form, setForm] = useState(empty);
+
+  const numberOrUndefined = (value: string) => {
+    const parsed = Number(value.trim());
+    return value.trim() && Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  };
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      adminCreateStudent({
+        data: {
+          fullName: form.fullName.trim(),
+          grNumber: form.grNumber.trim(),
+          classId: form.classId === "none" ? null : form.classId,
+          ...(form.rollNumber.trim() ? { rollNumber: form.rollNumber.trim() } : {}),
+          ...(form.dateOfBirth ? { dateOfBirth: form.dateOfBirth } : {}),
+          ...(numberOrUndefined(form.heightCm) ? { heightCm: numberOrUndefined(form.heightCm)! } : {}),
+          ...(numberOrUndefined(form.weightKg) ? { weightKg: numberOrUndefined(form.weightKg)! } : {}),
+          ...(form.parentName.trim() ? { parentName: form.parentName.trim() } : {}),
+          ...(form.parentPhone.trim() ? { parentPhone: form.parentPhone.trim() } : {}),
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Student added", {
+        description: form.parentPhone.trim()
+          ? "The parent can sign in with the GR number and their phone number."
+          : undefined,
+      });
+      void queryClient.invalidateQueries({ queryKey: ["students"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      setForm(empty);
+      onClose();
+    },
+    onError: (error) =>
+      toast.error("Couldn't add the student", {
+        description: error instanceof Error ? error.message : "Please check the details.",
+      }),
+  });
+
+  if (!open) return null;
+
+  const set = (key: keyof typeof empty) => (value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <Dialog open onOpenChange={(next) => (next ? null : onClose())}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New student</DialogTitle>
+          <DialogDescription>
+            Adding a parent phone number creates or reuses that parent's login and links this child
+            to it.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Student name" className="sm:col-span-2">
+            <Input value={form.fullName} onChange={(event) => set("fullName")(event.target.value)} />
+          </Field>
+          <Field label="GR number">
+            <Input value={form.grNumber} onChange={(event) => set("grNumber")(event.target.value)} />
+          </Field>
+          <Field label="Roll number">
+            <Input
+              value={form.rollNumber}
+              onChange={(event) => set("rollNumber")(event.target.value)}
+            />
+          </Field>
+          <Field label="Class" className="sm:col-span-2">
+            <Select value={form.classId} onValueChange={set("classId")}>
+              <SelectTrigger>
+                <SelectValue placeholder="No class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No class</SelectItem>
+                {classes.map((schoolClass) => (
+                  <SelectItem key={schoolClass.id} value={schoolClass.id}>
+                    {schoolClass.name}
+                    {schoolClass.division ? ` ${schoolClass.division}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Date of birth">
+            <Input
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(event) => set("dateOfBirth")(event.target.value)}
+            />
+          </Field>
+          <Field label="Height (cm)">
+            <Input
+              inputMode="decimal"
+              value={form.heightCm}
+              onChange={(event) => set("heightCm")(event.target.value)}
+            />
+          </Field>
+          <Field label="Weight (kg)">
+            <Input
+              inputMode="decimal"
+              value={form.weightKg}
+              onChange={(event) => set("weightKg")(event.target.value)}
+            />
+          </Field>
+          <Field label="Parent name">
+            <Input
+              value={form.parentName}
+              onChange={(event) => set("parentName")(event.target.value)}
+            />
+          </Field>
+          <Field label="Parent phone number" className="sm:col-span-2">
+            <Input
+              inputMode="numeric"
+              value={form.parentPhone}
+              onChange={(event) => set("parentPhone")(event.target.value)}
+            />
+          </Field>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            disabled={mutation.isPending || !form.fullName.trim() || !form.grNumber.trim()}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            Add student
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function EditStudentDialog({
   student,
