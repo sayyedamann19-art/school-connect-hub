@@ -47,7 +47,7 @@ const NOTES = [
 export async function downloadStudentTemplate() {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "School Connect";
+  workbook.creator = "Dawn Breakers School";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Student Data", {
@@ -104,7 +104,7 @@ export async function downloadStudentTemplate() {
 
   const info = workbook.addWorksheet("Instructions");
   info.columns = [{ width: 24 }, { width: 12 }, { width: 62 }, { width: 18 }];
-  const title = info.addRow(["School Connect — Student Import Template"]);
+  const title = info.addRow(["Dawn Breakers School — Student Import Template"]);
   title.font = { bold: true, size: 14, name: "Arial", color: { argb: NAVY } };
   info.addRow([]);
   INSTRUCTIONS.forEach((row, index) => {
@@ -134,7 +134,7 @@ export async function downloadStudentTemplate() {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "school-connect-student-import-template.xlsx";
+  anchor.download = "dawn-breakers-student-import-template.xlsx";
   anchor.rel = "noopener";
   document.body.appendChild(anchor);
   anchor.click();

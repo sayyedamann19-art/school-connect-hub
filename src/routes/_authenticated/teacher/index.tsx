@@ -13,13 +13,13 @@ import { getTeacherOverview } from "@/lib/school.functions";
 export const Route = createFileRoute("/_authenticated/teacher/")({
   head: () => ({
     meta: [
-      { title: "My classes — School Connect Teacher Area" },
+      { title: "My classes — Dawn Breakers School Teacher Area" },
       {
         name: "description",
         content:
           "Teacher area for assigned classes and students, with permitted notes and character card points.",
       },
-      { property: "og:title", content: "My classes — School Connect" },
+      { property: "og:title", content: "My classes — Dawn Breakers School" },
       {
         property: "og:description",
         content: "Assigned classes and students, with permitted notes and character card points.",
@@ -79,7 +79,6 @@ function TeacherArea() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Assigned classes" value={assignments.length} icon={GraduationCap} />
         <StatCard label="Students in scope" value={students.length} icon={Users} />
-        <StatCard label="Pending attendance" value="—" hint="Coming in the next module" />
       </div>
 
       <SectionCard title="My class assignments">
@@ -111,7 +110,7 @@ function TeacherArea() {
         )}
       </SectionCard>
 
-      <SectionCard title="Students" description="Read-only in V1; recording tools come next.">
+      <SectionCard title="Students" description="Open Attendance, Feedback or Character to record for these students.">
         <DataTable<StudentRow>
           columns={[
             { key: "name", header: "Student", cell: (row) => row.full_name },

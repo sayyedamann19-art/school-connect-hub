@@ -1,29 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { GraduationCap, Link2, School, Users } from "lucide-react";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { StatCard } from "@/components/common/stat-card";
-import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
+import { ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
+import { Button } from "@/components/ui/button";
+import type { NavPath } from "@/components/layout/nav-config";
 import { getAdminOverview } from "@/lib/school.functions";
+
+type NavTarget = NavPath;
+
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({
     meta: [
-      { title: "School overview — School Connect Admin" },
+      { title: "School overview — Dawn Breakers School Admin" },
       {
         name: "description",
         content:
-          "Admin area for managing students, classes, teachers and parent–student links across the school.",
+          "Admin area for managing students, classes, teachers and parent–student links across Dawn Breakers School.",
       },
-      { property: "og:title", content: "School overview — School Connect Admin" },
+      { property: "og:title", content: "School overview — Dawn Breakers School Admin" },
       {
         property: "og:description",
         content: "Manage students, classes, teachers and parent–student links across the school.",
       },
     ],
   }),
+
   component: () => (
     <RoleGate role="admin">
       <AdminArea />
@@ -31,18 +37,33 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   ),
 });
 
-const managementSections = [
+const managementSections: { title: string; description: string; to: NavTarget; cta: string }[] = [
   {
     title: "Students",
     description: "Add students, set class and division, roll number, date of birth and photo.",
+    to: "/admin/students",
+    cta: "Manage students",
   },
-  { title: "Classes & divisions", description: "Create classes per academic year." },
-  { title: "Teachers", description: "Invite teachers and assign them to classes and subjects." },
   {
-    title: "Parent–student links",
-    description: "Link parents to their children. Only admins can change these links.",
+    title: "Classes & divisions",
+    description: "Create classes per academic year and see their strength.",
+    to: "/admin/classes",
+    cta: "Manage classes",
+  },
+  {
+    title: "Teachers",
+    description: "Add teacher logins and assign them to classes and subjects.",
+    to: "/admin/teachers",
+    cta: "Manage teachers",
+  },
+  {
+    title: "Excel import",
+    description: "Bulk-add students from the official workbook, and review past imports.",
+    to: "/admin/import",
+    cta: "Open importer",
   },
 ];
+
 
 function AdminArea() {
   const { data, isLoading, isError, refetch } = useQuery({
@@ -79,13 +100,13 @@ function AdminArea() {
       <div className="grid gap-4 lg:grid-cols-2">
         {managementSections.map((section) => (
           <SectionCard key={section.title} title={section.title} description={section.description}>
-            <EmptyState
-              title="Module coming next"
-              description="This management screen will be built in a following step."
-            />
+            <Button asChild variant="outline">
+              <Link to={section.to}>{section.cta}</Link>
+            </Button>
           </SectionCard>
         ))}
       </div>
+
     </div>
   );
 }

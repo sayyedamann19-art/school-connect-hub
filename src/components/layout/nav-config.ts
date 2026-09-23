@@ -1,15 +1,16 @@
 import {
+  Award,
+  Bell,
   CalendarCheck,
   GraduationCap,
-  LayoutDashboard,
+  History,
   House,
+  LayoutDashboard,
+  MessageSquareText,
+  School,
   Upload,
   UserRound,
   Users,
-  Bell,
-  History,
-  MessageSquareText,
-  Award,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,8 @@ export type NavPath =
   | "/teacher/character"
   | "/admin"
   | "/admin/students"
+  | "/admin/classes"
+  | "/admin/teachers"
   | "/admin/import"
   | "/admin/imports"
   | "/teacher/import"
@@ -44,6 +47,9 @@ export const navByRole: Record<AppRole, NavItem[]> = {
   parent: [
     { label: "Home", to: "/parent", icon: House },
     { label: "Children", to: "/parent/children", icon: Users },
+    { label: "Attendance", to: "/parent/attendance", icon: CalendarCheck },
+    { label: "Feedback", to: "/parent/feedback", icon: MessageSquareText },
+    { label: "Character", to: "/parent/character", icon: Award },
     { label: "Updates", to: "/parent/notifications", icon: Bell },
     { label: "Account", to: "/account", icon: UserRound },
   ],
@@ -58,10 +64,33 @@ export const navByRole: Record<AppRole, NavItem[]> = {
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },
     { label: "Students", to: "/admin/students", icon: Users },
+    { label: "Classes", to: "/admin/classes", icon: School },
+    { label: "Teachers", to: "/admin/teachers", icon: GraduationCap },
     { label: "Import", to: "/admin/import", icon: Upload },
     { label: "History", to: "/admin/imports", icon: History },
     { label: "Account", to: "/account", icon: UserRound },
   ],
+};
+
+/** The phone bottom bar fits five items; the rest stay in the side menu. */
+const bottomNavPaths: Record<AppRole, NavPath[]> = {
+  parent: ["/parent", "/parent/children", "/parent/attendance", "/parent/notifications", "/account"],
+  teacher: [
+    "/teacher",
+    "/teacher/attendance",
+    "/teacher/feedback",
+    "/teacher/character",
+    "/account",
+  ],
+  admin: ["/admin", "/admin/students", "/admin/classes", "/admin/teachers", "/account"],
+};
+
+export const bottomNavByRole: Record<AppRole, NavItem[]> = {
+  parent: bottomNavPaths.parent.flatMap((path) => navByRole.parent.filter((item) => item.to === path)),
+  teacher: bottomNavPaths.teacher.flatMap((path) =>
+    navByRole.teacher.filter((item) => item.to === path),
+  ),
+  admin: bottomNavPaths.admin.flatMap((path) => navByRole.admin.filter((item) => item.to === path)),
 };
 
 export const roleLabel: Record<AppRole, string> = {

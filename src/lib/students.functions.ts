@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { TablesUpdate } from "@/integrations/supabase/types";
+import { parentAlias } from "@/lib/parent-domain";
 
 const optionalText = (max: number) =>
   z
@@ -156,9 +157,9 @@ export const updateStudent = createServerFn({ method: "POST" })
         if (data.parentName !== undefined) parentPatch['full_name'] = data.parentName;
         if (data.parentPhone !== undefined) {
           parentPatch['phone'] = data.parentPhone;
-          parentPatch['login_alias'] = `parent.${data.parentPhone}@parents.schoolconnect.app`;
+          parentPatch['login_alias'] = parentAlias(data.parentPhone);
           await supabaseAdmin.auth.admin.updateUserById(link.parent_id, {
-            email: `parent.${data.parentPhone}@parents.schoolconnect.app`,
+            email: parentAlias(data.parentPhone),
             email_confirm: true,
           });
         }
