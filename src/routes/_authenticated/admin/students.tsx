@@ -103,14 +103,14 @@ function StudentsAdmin() {
         title="Student records"
         description="Manual edits and Excel imports update the same student records parents see."
         action={
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
+          <div className="col-span-full flex flex-col gap-2 sm:col-span-1 sm:flex-row">
+            <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
               <Link to="/admin/import">
                 <Upload className="mr-2 size-4" />
                 Import from Excel
               </Link>
             </Button>
-            <Button onClick={() => setAdding(true)}>
+            <Button className="w-full justify-center sm:w-auto" onClick={() => setAdding(true)}>
               <Plus className="mr-2 size-4" />
               New student
             </Button>
@@ -120,15 +120,15 @@ function StudentsAdmin() {
 
 
       <SectionCard title="Find a student">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Input
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
             placeholder="Search name, GR number or roll number"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
           <Select value={classId} onValueChange={setClassId}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-full sm:w-56">
               <SelectValue placeholder="All classes" />
             </SelectTrigger>
             <SelectContent>
