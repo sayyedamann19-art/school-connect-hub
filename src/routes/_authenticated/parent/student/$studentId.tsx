@@ -6,9 +6,9 @@ import { DefinitionList, PageHeader, SectionCard } from "@/components/common/sec
 import { StatCard } from "@/components/common/stat-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
-import { classLabel, initials } from "@/components/common/student-card";
+import { classLabel } from "@/components/common/student-card";
 import { RoleGate } from "@/components/layout/role-gate";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { StudentPhotoEditor } from "@/components/parent/student-photo-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStudentOverview } from "@/lib/school.functions";
 
@@ -86,14 +86,11 @@ function StudentProfile() {
       </Link>
 
       <div className="card-surface flex flex-wrap items-center gap-4 p-5">
-        <Avatar className="size-16 border border-border">
-          {photoUrl ? (
-            <AvatarImage src={photoUrl} alt={student.full_name} className="object-cover" />
-          ) : null}
-          <AvatarFallback className="bg-primary-soft text-base font-semibold text-primary">
-            {initials(student.full_name)}
-          </AvatarFallback>
-        </Avatar>
+        <StudentPhotoEditor
+          studentId={student.id}
+          name={student.full_name}
+          photoUrl={photoUrl}
+        />
         <div className="min-w-0 flex-1">
           <PageHeader title={student.full_name} description={classLabel(student.class)} />
           <div className="mt-3 flex flex-wrap gap-2">
