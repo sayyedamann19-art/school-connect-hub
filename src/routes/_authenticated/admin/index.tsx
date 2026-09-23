@@ -100,13 +100,13 @@ function AdminArea() {
       <div className="grid gap-4 lg:grid-cols-2">
         {managementSections.map((section) => (
           <SectionCard key={section.title} title={section.title} description={section.description}>
-            <EmptyState
-              title="Module coming next"
-              description="This management screen will be built in a following step."
-            />
+            <Button asChild variant="outline">
+              <Link to={section.to}>{section.cta}</Link>
+            </Button>
           </SectionCard>
         ))}
       </div>
+
     </div>
   );
 }
