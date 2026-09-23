@@ -146,6 +146,25 @@ function TeacherArea() {
               header: "Class",
               cell: (row) => (row.class_id ? (classNameById.get(row.class_id) ?? "—") : "—"),
             },
+            {
+              key: "active",
+              header: "Studying",
+              cell: (row) => (
+                <Switch
+                  checked={row.is_active}
+                  onCheckedChange={(checked) => {
+                    if (
+                      checked ||
+                      window.confirm(
+                        `Mark ${row.full_name} as left the school? Attendance, feedback and character records are kept.`,
+                      )
+                    ) {
+                      activeMutation.mutate({ studentId: row.id, isActive: checked });
+                    }
+                  }}
+                />
+              ),
+            },
           ]}
           rows={students}
           getRowKey={(row) => row.id}
