@@ -171,3 +171,28 @@ export const updateStudent = createServerFn({ method: "POST" })
 
     return { ok: true, updatedBy: userId };
   });
+
+/**
+ * Activates or deactivates a student. Admins may do this for anyone; teachers
+ * only for students in their assigned classes (checked by the database).
+ * Historical attendance, feedback and character records are left untouched.
+ */
+export const setStudentActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ studentId: z.string().uuid(), isActive: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: canEdit } = await supabase.rpc("can_edit_student", {
+      _student_id: data.studentId,
+    });
+    if (!canEdit) throw new Error("You can only change students in your assigned classes");
+
+    const { error } = await supabase
+      .from("students")
+      .update({ is_active: data.isActive })
+      .eq("id", data.studentId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
