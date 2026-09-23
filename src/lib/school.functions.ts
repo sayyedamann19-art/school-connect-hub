@@ -705,3 +705,109 @@ export const deleteCharacterPoint = createServerFn({ method: "POST" })
     if ((rows ?? []).length === 0) throw new Error("You can only delete entries you recorded");
     return { deleted: rows!.length };
   });
+
+/* ---------------------------------------------------------------- student photo */
+
+const PHOTO_MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
+
+/** Confirm the caller may manage this student's photo (own linked child, or admin). */
+async function assertCanManagePhoto(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  studentId: string,
+): Promise<string | null> {
+  const [linked, admin] = await Promise.all([
+    supabase.rpc("is_parent_of_student", { _student_id: studentId }),
+    supabase.rpc("is_admin"),
+  ]);
+  if (linked.error) throw new Error(linked.error.message);
+  if (!(linked.data === true || admin.data === true)) {
+    throw new Error("This student isn't linked to your account");
+  }
+
+  // Readable only when the relationship holds, so this doubles as a second check.
+  const { data, error } = await supabase
+    .from("students")
+    .select("photo_path")
+    .eq("id", studentId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("This student isn't linked to your account");
+  return data.photo_path ?? null;
+}
+
+/** Store a new photo for a linked child and point the student record at it. */
+export const uploadStudentPhoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        studentId: z.string().uuid(),
+        contentType: z.string().min(3).max(64),
+        base64: z.string().min(16),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ photoUrl: string | null }> => {
+    const { supabase } = context;
+    const extension = PHOTO_MIME_EXT[data.contentType.toLowerCase()];
+    if (!extension) throw new Error("Please choose a JPG, PNG or WebP image");
+
+    const previousPath = await assertCanManagePhoto(supabase, data.studentId);
+
+    const bytes = Buffer.from(data.base64, "base64");
+    if (bytes.byteLength === 0) throw new Error("That image could not be read");
+    if (bytes.byteLength > PHOTO_MAX_BYTES) throw new Error("Please choose an image under 3 MB");
+
+    // Storage writes and students.photo_path are admin-gated at the database level,
+    // so the privileged client runs only after the relationship check above.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const path = `students/${data.studentId}/${Date.now()}.${extension}`;
+
+    const upload = await supabaseAdmin.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, bytes, { contentType: data.contentType, upsert: true });
+    if (upload.error) throw new Error(upload.error.message);
+
+    const { error: updateError } = await supabaseAdmin
+      .from("students")
+      .update({ photo_path: path })
+      .eq("id", data.studentId);
+    if (updateError) {
+      await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([path]);
+      throw new Error(updateError.message);
+    }
+
+    if (previousPath && previousPath !== path) {
+      await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([previousPath]);
+    }
+
+    const signed = await signPhotoPaths(supabase, [path]);
+    return { photoUrl: signed[path] ?? null };
+  });
+
+/** Remove a linked child's photo and fall back to the initials avatar. */
+export const removeStudentPhoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ studentId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ removed: boolean }> => {
+    const { supabase } = context;
+    const previousPath = await assertCanManagePhoto(supabase, data.studentId);
+    if (!previousPath) return { removed: false };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("students")
+      .update({ photo_path: null })
+      .eq("id", data.studentId);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([previousPath]);
+    return { removed: true };
+  });
