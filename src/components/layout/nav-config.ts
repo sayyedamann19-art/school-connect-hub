@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   GraduationCap,
   History,
+  Link2,
   House,
   LayoutDashboard,
   MessageSquareText,
@@ -34,6 +35,9 @@ export type NavPath =
   | "/admin/teachers"
   | "/admin/import"
   | "/admin/imports"
+  | "/admin/parents"
+  | "/admin/updates"
+  | "/admin/attendance"
   | "/teacher/import"
   | "/account";
 
@@ -66,6 +70,9 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Students", to: "/admin/students", icon: Users },
     { label: "Classes", to: "/admin/classes", icon: School },
     { label: "Teachers", to: "/admin/teachers", icon: GraduationCap },
+    { label: "Parents", to: "/admin/parents", icon: Link2 },
+    { label: "Attendance", to: "/admin/attendance", icon: CalendarCheck },
+    { label: "Updates", to: "/admin/updates", icon: Bell },
     { label: "Import", to: "/admin/import", icon: Upload },
     { label: "History", to: "/admin/imports", icon: History },
     { label: "Account", to: "/account", icon: UserRound },
