@@ -158,7 +158,8 @@ function StudentsAdmin() {
           description="Click edit to change a record."
           contentClassName="px-0 py-0"
         >
-          <div className="overflow-x-auto">
+          {/* Desktop / tablet table */}
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -170,7 +171,6 @@ function StudentsAdmin() {
                   <TableHead>Parent</TableHead>
                   <TableHead>Active</TableHead>
                   <TableHead />
-
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,12 +216,71 @@ function StudentsAdmin() {
                         Edit
                       </Button>
                     </TableCell>
-
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile card list */}
+          <ul className="divide-y divide-border md:hidden">
+            {(studentsQuery.data ?? []).map((student) => (
+              <li key={student.id} className="space-y-3 px-5 py-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{student.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      GR {student.gr_number} · Roll {student.roll_number ?? "—"}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {student.is_active ? null : (
+                      <Badge variant="outline">Inactive</Badge>
+                    )}
+                    <Switch
+                      checked={student.is_active}
+                      aria-label={`${student.full_name} active`}
+                      onCheckedChange={(checked) =>
+                        activeMutation.mutate({ studentId: student.id, isActive: checked })
+                      }
+                    />
+                  </div>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="min-w-0">
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">Class</dt>
+                    <dd className="truncate">
+                      {student.class
+                        ? `${student.class.name}${student.class.division ? ` ${student.class.division}` : ""}`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Height / Weight
+                    </dt>
+                    <dd>
+                      {student.height_cm ? `${student.height_cm} cm` : "—"} /{" "}
+                      {student.weight_kg ? `${student.weight_kg} kg` : "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">Parent</dt>
+                    <dd className="truncate">{student.parent?.fullName ?? "—"}</dd>
+                    <dd className="truncate text-xs text-muted-foreground">
+                      {student.parent?.phone ?? "—"}
+                    </dd>
+                  </div>
+                  <div className="flex items-end justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => setEditing(student)}>
+                      <Pencil className="mr-2 size-4" />
+                      Edit
+                    </Button>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
         </SectionCard>
       )}
 
