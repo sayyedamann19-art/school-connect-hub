@@ -148,7 +148,7 @@ function AttendanceReports() {
                     value={reportQuery.data?.totals.leftEarly ?? 0}
                     tone="gold"
                   />
-                  <CountTile label="Other" value={reportQuery.data?.totals.other ?? 0} tone="muted" />
+                  <CountTile label="Other" value={reportQuery.data?.totals.other ?? 0} tone="neutral" />
                 </div>
               </SectionCard>
 
