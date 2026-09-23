@@ -14,9 +14,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedNoAccessRouteImport } from './routes/_authenticated/no-access'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAttendanceRouteImport } from './routes/_authenticated/admin/attendance'
 import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authenticated/admin/classes'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin/import'
 import { Route as AuthenticatedAdminImportsRouteImport } from './routes/_authenticated/admin/imports'
+import { Route as AuthenticatedAdminParentsRouteImport } from './routes/_authenticated/admin/parents'
 import { Route as AuthenticatedAdminStudentsRouteImport } from './routes/_authenticated/admin/students'
 import { Route as AuthenticatedAdminTeachersRouteImport } from './routes/_authenticated/admin/teachers'
 import { Route as AuthenticatedAdminUpdatesRouteImport } from './routes/_authenticated/admin/updates'
@@ -57,6 +59,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAttendanceRoute =
+  AuthenticatedAdminAttendanceRouteImport.update({
+    id: '/admin/attendance',
+    path: '/admin/attendance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminClassesRoute =
   AuthenticatedAdminClassesRouteImport.update({
     id: '/admin/classes',
@@ -73,6 +81,12 @@ const AuthenticatedAdminImportsRoute =
   AuthenticatedAdminImportsRouteImport.update({
     id: '/admin/imports',
     path: '/admin/imports',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminParentsRoute =
+  AuthenticatedAdminParentsRouteImport.update({
+    id: '/admin/parents',
+    path: '/admin/parents',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminStudentsRoute =
@@ -170,9 +184,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AuthenticatedAccountRoute
   '/no-access': typeof AuthenticatedNoAccessRoute
+  '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
+  '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/admin/updates': typeof AuthenticatedAdminUpdatesRoute
@@ -194,9 +210,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AuthenticatedAccountRoute
   '/no-access': typeof AuthenticatedNoAccessRoute
+  '/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/import': typeof AuthenticatedAdminImportRoute
   '/admin/imports': typeof AuthenticatedAdminImportsRoute
+  '/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/admin/updates': typeof AuthenticatedAdminUpdatesRoute
@@ -220,9 +238,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/no-access': typeof AuthenticatedNoAccessRoute
+  '/_authenticated/admin/attendance': typeof AuthenticatedAdminAttendanceRoute
   '/_authenticated/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/_authenticated/admin/import': typeof AuthenticatedAdminImportRoute
   '/_authenticated/admin/imports': typeof AuthenticatedAdminImportsRoute
+  '/_authenticated/admin/parents': typeof AuthenticatedAdminParentsRoute
   '/_authenticated/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/_authenticated/admin/teachers': typeof AuthenticatedAdminTeachersRoute
   '/_authenticated/admin/updates': typeof AuthenticatedAdminUpdatesRoute
@@ -246,9 +266,11 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/no-access'
+    | '/admin/attendance'
     | '/admin/classes'
     | '/admin/import'
     | '/admin/imports'
+    | '/admin/parents'
     | '/admin/students'
     | '/admin/teachers'
     | '/admin/updates'
@@ -270,9 +292,11 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/no-access'
+    | '/admin/attendance'
     | '/admin/classes'
     | '/admin/import'
     | '/admin/imports'
+    | '/admin/parents'
     | '/admin/students'
     | '/admin/teachers'
     | '/admin/updates'
@@ -295,9 +319,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_authenticated/account'
     | '/_authenticated/no-access'
+    | '/_authenticated/admin/attendance'
     | '/_authenticated/admin/classes'
     | '/_authenticated/admin/import'
     | '/_authenticated/admin/imports'
+    | '/_authenticated/admin/parents'
     | '/_authenticated/admin/students'
     | '/_authenticated/admin/teachers'
     | '/_authenticated/admin/updates'
@@ -358,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/attendance': {
+      id: '/_authenticated/admin/attendance'
+      path: '/admin/attendance'
+      fullPath: '/admin/attendance'
+      preLoaderRoute: typeof AuthenticatedAdminAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/classes': {
       id: '/_authenticated/admin/classes'
       path: '/admin/classes'
@@ -377,6 +410,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/imports'
       fullPath: '/admin/imports'
       preLoaderRoute: typeof AuthenticatedAdminImportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/parents': {
+      id: '/_authenticated/admin/parents'
+      path: '/admin/parents'
+      fullPath: '/admin/parents'
+      preLoaderRoute: typeof AuthenticatedAdminParentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/students': {
@@ -490,9 +530,11 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedNoAccessRoute: typeof AuthenticatedNoAccessRoute
+  AuthenticatedAdminAttendanceRoute: typeof AuthenticatedAdminAttendanceRoute
   AuthenticatedAdminClassesRoute: typeof AuthenticatedAdminClassesRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
   AuthenticatedAdminImportsRoute: typeof AuthenticatedAdminImportsRoute
+  AuthenticatedAdminParentsRoute: typeof AuthenticatedAdminParentsRoute
   AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
   AuthenticatedAdminTeachersRoute: typeof AuthenticatedAdminTeachersRoute
   AuthenticatedAdminUpdatesRoute: typeof AuthenticatedAdminUpdatesRoute
@@ -514,9 +556,11 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedNoAccessRoute: AuthenticatedNoAccessRoute,
+  AuthenticatedAdminAttendanceRoute: AuthenticatedAdminAttendanceRoute,
   AuthenticatedAdminClassesRoute: AuthenticatedAdminClassesRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
   AuthenticatedAdminImportsRoute: AuthenticatedAdminImportsRoute,
+  AuthenticatedAdminParentsRoute: AuthenticatedAdminParentsRoute,
   AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
   AuthenticatedAdminTeachersRoute: AuthenticatedAdminTeachersRoute,
   AuthenticatedAdminUpdatesRoute: AuthenticatedAdminUpdatesRoute,
