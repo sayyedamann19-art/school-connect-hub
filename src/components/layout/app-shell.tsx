@@ -3,7 +3,7 @@ import { Bell, LogOut, Menu } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
-import { appName, navByRole, roleLabel } from "@/components/layout/nav-config";
+import { appName, bottomNavByRole, navByRole, roleLabel } from "@/components/layout/nav-config";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,9 +112,10 @@ function AccountMenu() {
 function MobileNavBar() {
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const items = primaryRole ? navByRole[primaryRole] : [];
+  const items = primaryRole ? bottomNavByRole[primaryRole] : [];
 
   if (items.length === 0) return null;
+
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
