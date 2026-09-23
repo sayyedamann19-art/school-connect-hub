@@ -168,7 +168,9 @@ function StudentsAdmin() {
                   <TableHead>Roll</TableHead>
                   <TableHead>Height / Weight</TableHead>
                   <TableHead>Parent</TableHead>
+                  <TableHead>Active</TableHead>
                   <TableHead />
+
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -199,12 +201,22 @@ function StudentsAdmin() {
                         {student.parent?.phone ?? "—"}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={student.is_active}
+                        aria-label={`${student.full_name} active`}
+                        onCheckedChange={(checked) =>
+                          activeMutation.mutate({ studentId: student.id, isActive: checked })
+                        }
+                      />
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => setEditing(student)}>
                         <Pencil className="mr-2 size-4" />
                         Edit
                       </Button>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
