@@ -1,0 +1,400 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { parentAlias } from "@/lib/parent-domain";
+
+/** Every function here is admin-only; the role is re-checked server-side. */
+async function assertAdmin(supabase: { rpc: (name: "is_admin") => Promise<{ data: unknown }> }) {
+  const { data } = await supabase.rpc("is_admin");
+  if (!data) throw new Error("Only administrators can do this");
+}
+
+const classInput = z.object({
+  name: z.string().trim().min(1).max(40),
+  division: z
+    .string()
+    .trim()
+    .max(10)
+    .transform((value) => (value.length ? value : null))
+    .nullable()
+    .optional(),
+  academicYear: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{4}$/, "Use the format 2026-2027"),
+});
+
+export type AdminClass = {
+  id: string;
+  name: string;
+  division: string | null;
+  academic_year: string;
+  studentCount: number;
+  teachers: { assignmentId: string; teacherId: string; name: string; subject: string | null; isClassTeacher: boolean }[];
+};
+
+/** Classes with their student counts and assigned teachers. */
+export const adminListClasses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminClass[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabase } = context;
+
+    const [{ data: classes, error }, { data: students }, { data: assignments }] = await Promise.all([
+      supabase.from("classes").select("id, name, division, academic_year").order("name").order("division"),
+      supabase.from("students").select("id, class_id").eq("is_active", true),
+      supabase
+        .from("class_teachers")
+        .select("id, class_id, teacher_id, subject, is_class_teacher, teacher:teachers(profile_id)"),
+    ]);
+    if (error) throw new Error(error.message);
+
+    const profileIds = [...new Set((assignments ?? []).map((row) => row.teacher?.profile_id).filter(Boolean))] as string[];
+    const nameById = new Map<string, string>();
+    if (profileIds.length) {
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", profileIds);
+      for (const profile of profiles ?? []) nameById.set(profile.id, profile.full_name ?? "Teacher");
+    }
+
+    const countByClass = new Map<string, number>();
+    for (const student of students ?? []) {
+      if (!student.class_id) continue;
+      countByClass.set(student.class_id, (countByClass.get(student.class_id) ?? 0) + 1);
+    }
+
+    return (classes ?? []).map((schoolClass) => ({
+      ...schoolClass,
+      studentCount: countByClass.get(schoolClass.id) ?? 0,
+      teachers: (assignments ?? [])
+        .filter((row) => row.class_id === schoolClass.id)
+        .map((row) => ({
+          assignmentId: row.id,
+          teacherId: row.teacher_id,
+          name: row.teacher?.profile_id ? (nameById.get(row.teacher.profile_id) ?? "Teacher") : "Teacher",
+          subject: row.subject,
+          isClassTeacher: row.is_class_teacher,
+        })),
+    }));
+  });
+
+export const adminCreateClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => classInput.parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase.from("classes").insert({
+      name: data.name,
+      division: data.division ?? null,
+      academic_year: data.academicYear,
+    });
+    if (error) {
+      throw new Error(
+        error.code === "23505" ? "That class, division and year already exists" : error.message,
+      );
+    }
+    return { ok: true };
+  });
+
+export const adminUpdateClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => classInput.extend({ classId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase
+      .from("classes")
+      .update({ name: data.name, division: data.division ?? null, academic_year: data.academicYear })
+      .eq("id", data.classId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export type AdminTeacher = {
+  id: string;
+  profile_id: string;
+  employee_code: string | null;
+  is_active: boolean;
+  name: string;
+  phone: string | null;
+  classes: { assignmentId: string; classId: string; label: string; subject: string | null; isClassTeacher: boolean }[];
+};
+
+/** Teachers with their profile details and class assignments. */
+export const adminListTeachers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminTeacher[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabase } = context;
+
+    const { data: teachers, error } = await supabase
+      .from("teachers")
+      .select("id, profile_id, employee_code, is_active")
+      .order("employee_code");
+    if (error) throw new Error(error.message);
+
+    const profileIds = (teachers ?? []).map((row) => row.profile_id);
+    const profileById = new Map<string, { full_name: string | null; phone: string | null }>();
+    if (profileIds.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("id", profileIds);
+      for (const profile of profiles ?? []) {
+        profileById.set(profile.id, { full_name: profile.full_name, phone: profile.phone });
+      }
+    }
+
+    const { data: assignments } = await supabase
+      .from("class_teachers")
+      .select("id, class_id, teacher_id, subject, is_class_teacher, class:classes(name, division)");
+
+    return (teachers ?? []).map((teacher) => ({
+      ...teacher,
+      name: profileById.get(teacher.profile_id)?.full_name ?? "Teacher",
+      phone: profileById.get(teacher.profile_id)?.phone ?? null,
+      classes: (assignments ?? [])
+        .filter((row) => row.teacher_id === teacher.id)
+        .map((row) => ({
+          assignmentId: row.id,
+          classId: row.class_id,
+          label: row.class
+            ? `${row.class.name}${row.class.division ? `-${row.class.division}` : ""}`
+            : "Class",
+          subject: row.subject,
+          isClassTeacher: row.is_class_teacher,
+        })),
+    }));
+  });
+
+/** Creates a staff login plus the matching teacher record and teacher role. */
+export const adminCreateTeacher = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2).max(120),
+        email: z.string().trim().email().max(160),
+        password: z.string().min(8).max(72),
+        employeeCode: z.string().trim().max(20).optional(),
+        phone: z
+          .string()
+          .trim()
+          .regex(/^[6-9]\d{9}$/)
+          .optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName },
+    });
+    if (authError || !created.user) {
+      throw new Error(authError?.message ?? "Couldn't create the teacher login");
+    }
+    const profileId = created.user.id;
+
+    await supabaseAdmin.from("profiles").upsert(
+      {
+        id: profileId,
+        full_name: data.fullName,
+        ...(data.phone ? { phone: data.phone } : {}),
+      },
+      { onConflict: "id" },
+    );
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: profileId, role: "teacher" }, { onConflict: "user_id,role" });
+
+    const { error: teacherError } = await supabaseAdmin.from("teachers").insert({
+      profile_id: profileId,
+      ...(data.employeeCode ? { employee_code: data.employeeCode } : {}),
+    });
+    if (teacherError) throw new Error(teacherError.message);
+
+    return { ok: true };
+  });
+
+export const adminSetTeacherActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ teacherId: z.string().uuid(), isActive: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase
+      .from("teachers")
+      .update({ is_active: data.isActive })
+      .eq("id", data.teacherId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Assigns a teacher to a class. Attendance and feedback access follow from this. */
+export const adminAssignTeacher = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        teacherId: z.string().uuid(),
+        classId: z.string().uuid(),
+        subject: z.string().trim().max(60).optional(),
+        isClassTeacher: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase.from("class_teachers").insert({
+      teacher_id: data.teacherId,
+      class_id: data.classId,
+      ...(data.subject ? { subject: data.subject } : {}),
+      is_class_teacher: data.isClassTeacher ?? false,
+    });
+    if (error) {
+      throw new Error(
+        error.code === "23505" ? "That teacher is already assigned to this class" : error.message,
+      );
+    }
+    return { ok: true };
+  });
+
+export const adminUnassignTeacher = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ assignmentId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase
+      .from("class_teachers")
+      .delete()
+      .eq("id", data.assignmentId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Adds one student by hand, with an optional parent account created or reused by phone. */
+export const adminCreateStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2).max(120),
+        grNumber: z
+          .string()
+          .trim()
+          .regex(/^[A-Za-z0-9/-]{3,32}$/, "GR number can use letters, numbers, / and -"),
+        classId: z.string().uuid().nullable().optional(),
+        rollNumber: z.string().trim().max(16).optional(),
+        dateOfBirth: z
+          .string()
+          .trim()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        heightCm: z.number().positive().max(300).optional(),
+        weightKg: z.number().positive().max(300).optional(),
+        parentName: z.string().trim().max(120).optional(),
+        parentPhone: z
+          .string()
+          .trim()
+          .regex(/^[6-9]\d{9}$/)
+          .optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: clash } = await supabaseAdmin
+      .from("students")
+      .select("id")
+      .ilike("gr_number", data.grNumber)
+      .maybeSingle();
+    if (clash) throw new Error("A student with that GR number already exists");
+
+    const { data: student, error } = await supabaseAdmin
+      .from("students")
+      .insert({
+        full_name: data.fullName,
+        gr_number: data.grNumber,
+        class_id: data.classId ?? null,
+        roll_number: data.rollNumber ?? null,
+        date_of_birth: data.dateOfBirth ?? null,
+        height_cm: data.heightCm ?? null,
+        weight_kg: data.weightKg ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    if (data.parentPhone) {
+      const { data: existingParent } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("phone", data.parentPhone)
+        .maybeSingle();
+
+      let parentId = existingParent?.id ?? null;
+      if (!parentId) {
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: parentAlias(data.parentPhone),
+          password: data.parentPhone,
+          email_confirm: true,
+          user_metadata: { full_name: data.parentName ?? "Parent" },
+        });
+        if (authError || !authUser.user) {
+          throw new Error(authError?.message ?? "Couldn't create the parent account");
+        }
+        parentId = authUser.user.id;
+        await supabaseAdmin
+          .from("user_roles")
+          .upsert({ user_id: parentId, role: "parent" }, { onConflict: "user_id,role" });
+      }
+
+      await supabaseAdmin.from("profiles").upsert(
+        {
+          id: parentId,
+          full_name: data.parentName ?? "Parent",
+          phone: data.parentPhone,
+          login_alias: parentAlias(data.parentPhone),
+        },
+        { onConflict: "id" },
+      );
+
+      await supabaseAdmin
+        .from("parent_students")
+        .insert({ parent_id: parentId, student_id: student.id });
+    }
+
+    return { ok: true, studentId: student.id };
+  });
+
+export const adminSetStudentActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ studentId: z.string().uuid(), isActive: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { error } = await context.supabase
+      .from("students")
+      .update({ is_active: data.isActive })
+      .eq("id", data.studentId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
