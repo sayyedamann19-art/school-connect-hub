@@ -66,9 +66,11 @@ export const Route = createFileRoute("/_authenticated/admin/students")({
 type Student = Awaited<ReturnType<typeof listManagedStudents>>[number];
 
 function StudentsAdmin() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [classId, setClassId] = useState<string>("all");
   const [editing, setEditing] = useState<Student | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const classesQuery = useQuery({ queryKey: ["classes"], queryFn: () => listClasses() });
   const studentsQuery = useQuery({
@@ -82,20 +84,40 @@ function StudentsAdmin() {
       }),
   });
 
+  const activeMutation = useMutation({
+    mutationFn: (payload: { studentId: string; isActive: boolean }) =>
+      adminSetStudentActive({ data: payload }),
+    onSuccess: () => {
+      toast.success("Student updated");
+      void queryClient.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: (error) =>
+      toast.error("Couldn't update the student", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Student records"
         description="Manual edits and Excel imports update the same student records parents see."
         action={
-          <Button asChild variant="outline">
-            <Link to="/admin/import">
-              <Upload className="mr-2 size-4" />
-              Import from Excel
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/admin/import">
+                <Upload className="mr-2 size-4" />
+                Import from Excel
+              </Link>
+            </Button>
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="mr-2 size-4" />
+              New student
+            </Button>
+          </div>
         }
       />
+
 
       <SectionCard title="Find a student">
         <div className="flex flex-wrap gap-3">
