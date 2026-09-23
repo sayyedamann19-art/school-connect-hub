@@ -1,8 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BellRing, CalendarCheck, Megaphone, MessageSquareText } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { updates, type UpdateCategory } from "@/lib/mock/school-data";
+import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
+import { listPublishedUpdates, type SchoolUpdate } from "@/lib/updates.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/parent/notifications")({
@@ -12,79 +14,99 @@ export const Route = createFileRoute("/_authenticated/parent/notifications")({
       {
         name: "description",
         content:
-          "School notices, attendance alerts and new teacher feedback for your children at Dawn Breakers School.",
+          "School notices and announcements published by Dawn Breakers School for parents.",
       },
       { property: "og:title", content: "Updates — Dawn Breakers School" },
       {
         property: "og:description",
-        content: "Notices, attendance alerts and feedback updates from the school.",
+        content: "Notices and announcements published by the school.",
       },
     ],
   }),
   component: NotificationsPage,
 });
 
-const categoryMeta: Record<UpdateCategory, { icon: LucideIcon; tone: string; label: string }> = {
+const categoryMeta: Record<SchoolUpdate["category"], { icon: LucideIcon; tone: string; label: string }> = {
   school: { icon: Megaphone, tone: "bg-info-soft text-info", label: "School" },
   attendance: { icon: CalendarCheck, tone: "bg-gold-soft text-warning-foreground", label: "Attendance" },
   feedback: { icon: MessageSquareText, tone: "bg-teal-soft text-teal", label: "Feedback" },
   notice: { icon: BellRing, tone: "bg-primary-soft text-primary", label: "Notice" },
 };
 
+function formatWhen(value: string | null) {
+  if (!value) return "";
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function NotificationsPage() {
-  const unread = updates.filter((item) => item.unread);
-  const earlier = updates.filter((item) => !item.unread);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["parent", "updates"],
+    queryFn: () => listPublishedUpdates(),
+  });
+
+  if (isLoading) return <LoadingCards count={3} />;
+
+  if (isError) {
+    return (
+      <ErrorState
+        title="We couldn't load updates"
+        description="Please try again in a moment."
+        onRetry={() => void refetch()}
+      />
+    );
+  }
+
+  const updates = data ?? [];
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="page-title">Updates</h1>
         <p className="meta-text mt-1.5">
-          {unread.length} unread · {updates.length} in the last 30 days
+          {updates.length === 0
+            ? "No updates published yet"
+            : `${updates.length} update${updates.length === 1 ? "" : "s"} from the school`}
         </p>
       </header>
 
-      {[
-        { title: "New", items: unread },
-        { title: "Earlier", items: earlier },
-      ]
-        .filter((group) => group.items.length > 0)
-        .map((group) => (
-          <section key={group.title} className="space-y-3">
-            <h2 className="eyebrow">{group.title}</h2>
-            {group.items.map((item) => {
-              const meta = categoryMeta[item.category];
-              return (
-                <article
-                  key={item.id}
+      {updates.length === 0 ? (
+        <EmptyState
+          title="No updates yet"
+          description="School notices will appear here as soon as the office publishes them."
+          icon={<BellRing className="size-5" strokeWidth={1.75} />}
+        />
+      ) : (
+        <section className="space-y-3">
+          {updates.map((item) => {
+            const meta = categoryMeta[item.category];
+            return (
+              <article key={item.id} className={cn("card-surface flex gap-3.5 p-4")}>
+                <span
                   className={cn(
-                    "card-surface flex gap-3.5 p-4",
-                    item.unread && "border-teal/25 bg-teal-soft/25",
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                    meta.tone,
                   )}
                 >
-                  <span
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                      meta.tone,
-                    )}
-                  >
-                    <meta.icon className="size-[1.125rem]" strokeWidth={1.75} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground">{item.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-foreground/90">{item.body}</p>
-                    <p className="meta-text mt-2">
-                      {meta.label} · {item.time}
-                    </p>
-                  </div>
-                  {item.unread ? (
-                    <span className="mt-1 size-2 shrink-0 rounded-full bg-teal" aria-label="Unread" />
-                  ) : null}
-                </article>
-              );
-            })}
-          </section>
-        ))}
+                  <meta.icon className="size-[1.125rem]" strokeWidth={1.75} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground">{item.title}</p>
+                  <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+                    {item.body}
+                  </p>
+                  <p className="meta-text mt-2">
+                    {meta.label} · {formatWhen(item.published_at ?? item.created_at)}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
