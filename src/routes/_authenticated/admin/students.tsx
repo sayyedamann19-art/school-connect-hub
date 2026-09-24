@@ -123,7 +123,7 @@ function StudentsAdmin() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <Input
             className="w-full sm:max-w-xs"
-            placeholder="Search name, GR number or roll number"
+            placeholder="Search name, GR or roll number"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
