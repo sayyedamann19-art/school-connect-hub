@@ -43,6 +43,13 @@
       "when": 1790169609114,
       "tag": "0005_create_school_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790426347640,
+      "tag": "0006_create_academics_module",
+      "breakpoints": true
     }
   ]
 }
