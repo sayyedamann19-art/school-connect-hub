@@ -84,7 +84,7 @@ function ExamsPanel() {
     onError: (e: Error) => toast.error("Exam not added", { description: e.message }),
   });
   const update = useMutation({
-    mutationFn: (v: Parameters<typeof adminUpdateExam>[0]["data"]) => adminUpdateExam({ data: v }),
+    mutationFn: (v: { examId: string; name?: string; displayOrder?: number; isActive?: boolean; status?: "draft" | "published" }) => adminUpdateExam({ data: v }),
     onSuccess: () => { toast.success("Exam updated"); refresh(); },
     onError: (e: Error) => toast.error("Exam not updated", { description: e.message }),
   });
@@ -149,7 +149,7 @@ function SubjectsPanel() {
   const refresh = useRefresh();
   const [name, setName] = useState("");
   const save = useMutation({
-    mutationFn: (v: Parameters<typeof adminSaveSubject>[0]["data"]) => adminSaveSubject({ data: v }),
+    mutationFn: (v: { subjectId?: string; name?: string; displayOrder?: number; isActive?: boolean }) => adminSaveSubject({ data: v }),
     onSuccess: () => { toast.success("Subject saved"); setName(""); refresh(); },
     onError: (e: Error) => toast.error("Subject not saved", { description: e.message }),
   });
