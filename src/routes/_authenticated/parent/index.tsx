@@ -1,7 +1,6 @@
-import {
-  BookOpen, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
+import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
 import { useState } from "react";
 
 import { ChildSwitcher } from "@/components/parent/child-switcher";
