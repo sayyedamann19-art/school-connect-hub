@@ -403,13 +403,13 @@ export const adminUpdateExam = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase);
-    const patch: Record<string, unknown> = {};
-    if (data.name !== undefined) patch.name = data.name;
-    if (data.displayOrder !== undefined) patch.display_order = data.displayOrder;
-    if (data.isActive !== undefined) patch.is_active = data.isActive;
+    const patch: Sb = {};
+    if (data.name !== undefined) patch["name"] = data.name;
+    if (data.displayOrder !== undefined) patch["display_order"] = data.displayOrder;
+    if (data.isActive !== undefined) patch["is_active"] = data.isActive;
     if (data.status !== undefined) {
-      patch.status = data.status;
-      patch.published_at = data.status === "published" ? new Date().toISOString() : null;
+      patch["status"] = data.status;
+      patch["published_at"] = data.status === "published" ? new Date().toISOString() : null;
     }
     const { error } = await context.supabase.from("academic_exams").update(patch).eq("id", data.examId);
     if (error) throw new Error(error.code === "23505" ? "This exam already exists for that year" : error.message);
@@ -438,10 +438,10 @@ export const adminSaveSubject = createServerFn({ method: "POST" })
       if (error) throw new Error(error.code === "23505" ? "This subject already exists" : error.message);
       return { ok: true };
     }
-    const patch: Record<string, unknown> = {};
-    if (data.name !== undefined) patch.name = data.name;
-    if (data.displayOrder !== undefined) patch.display_order = data.displayOrder;
-    if (data.isActive !== undefined) patch.is_active = data.isActive;
+    const patch: Sb = {};
+    if (data.name !== undefined) patch["name"] = data.name;
+    if (data.displayOrder !== undefined) patch["display_order"] = data.displayOrder;
+    if (data.isActive !== undefined) patch["is_active"] = data.isActive;
     const { error } = await context.supabase.from("subjects").update(patch).eq("id", data.subjectId);
     if (error) throw new Error(error.code === "23505" ? "This subject already exists" : error.message);
     return { ok: true };

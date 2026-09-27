@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
+import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
 import { useState } from "react";
 
 import { ChildSwitcher } from "@/components/parent/child-switcher";
@@ -160,6 +160,16 @@ function ParentHome() {
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-bold text-foreground">Character card</span>
             <span className="meta-text">{child.characterScore} points recorded</span>
+          </span>
+          <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
+        </Link>
+        <Link to="/parent/academics" className="card-surface flex items-center gap-3.5 p-4">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+            <BookOpen className="size-5" strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-foreground">Academics</span>
+            <span className="meta-text">Published exam results</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>

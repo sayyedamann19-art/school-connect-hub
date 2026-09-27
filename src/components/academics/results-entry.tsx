@@ -155,7 +155,7 @@ export function ResultsEntry() {
       <section className="card-surface grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label>Academic year</Label>
-          <Select value={activeYear ?? undefined} onValueChange={(v) => { setYear(v); setExamId(null); setClassId(null); }}>
+          <Select value={activeYear ?? ""} onValueChange={(v) => { setYear(v); setExamId(null); setClassId(null); }}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
@@ -164,7 +164,7 @@ export function ResultsEntry() {
         </div>
         <div className="space-y-1.5">
           <Label>Exam</Label>
-          <Select value={exam?.id} onValueChange={setExamId}>
+          <Select value={exam?.id ?? ""} onValueChange={setExamId}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Select exam" /></SelectTrigger>
             <SelectContent>
               {yearExams.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
@@ -173,7 +173,7 @@ export function ResultsEntry() {
         </div>
         <div className="space-y-1.5">
           <Label>Class / division</Label>
-          <Select value={klass?.id} onValueChange={setClassId}>
+          <Select value={klass?.id ?? ""} onValueChange={setClassId}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Select class" /></SelectTrigger>
             <SelectContent>
               {yearClasses.map((c) => <SelectItem key={c.id} value={c.id}>{classLabel(c)}</SelectItem>)}

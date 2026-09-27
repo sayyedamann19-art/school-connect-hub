@@ -1,5 +1,6 @@
 import {
   Award,
+  BookOpen,
   Bell,
   CalendarCheck,
   GraduationCap,
@@ -25,6 +26,9 @@ export type NavPath =
   | "/parent/attendance"
   | "/parent/feedback"
   | "/parent/character"
+  | "/parent/academics"
+  | "/teacher/academics"
+  | "/admin/academics"
   | "/teacher"
   | "/teacher/attendance"
   | "/teacher/feedback"
@@ -54,6 +58,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Attendance", to: "/parent/attendance", icon: CalendarCheck },
     { label: "Feedback", to: "/parent/feedback", icon: MessageSquareText },
     { label: "Character", to: "/parent/character", icon: Award },
+    { label: "Academics", to: "/parent/academics", icon: BookOpen },
     { label: "Updates", to: "/parent/notifications", icon: Bell },
     { label: "Account", to: "/account", icon: UserRound },
   ],
@@ -62,6 +67,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Attendance", to: "/teacher/attendance", icon: CalendarCheck },
     { label: "Feedback", to: "/teacher/feedback", icon: MessageSquareText },
     { label: "Character", to: "/teacher/character", icon: Award },
+    { label: "Results", to: "/teacher/academics", icon: BookOpen },
     { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
@@ -72,6 +78,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Teachers", to: "/admin/teachers", icon: GraduationCap },
     { label: "Parents", to: "/admin/parents", icon: Link2 },
     { label: "Attendance", to: "/admin/attendance", icon: CalendarCheck },
+    { label: "Academics", to: "/admin/academics", icon: BookOpen },
     { label: "Updates", to: "/admin/updates", icon: Bell },
     { label: "Import", to: "/admin/import", icon: Upload },
     { label: "History", to: "/admin/imports", icon: History },
