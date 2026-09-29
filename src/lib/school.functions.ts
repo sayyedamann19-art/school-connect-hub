@@ -337,7 +337,10 @@ async function assertTeachesClass(
 ) {
   const { data, error } = await supabase.rpc("teaches_class", { _class_id: classId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("You are not assigned to this class");
+  if (data) return;
+  // Admins can manage every class (RLS already grants them full access).
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) throw new Error("You are not assigned to this class");
 }
 
 /** Roster for one assigned class on one date, with any attendance already recorded. */
