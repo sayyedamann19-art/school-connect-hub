@@ -50,6 +50,13 @@
       "when": 1790426347640,
       "tag": "0006_create_academics_module",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791386932908,
+      "tag": "0007_class_subject_templates",
+      "breakpoints": true
     }
   ]
 }

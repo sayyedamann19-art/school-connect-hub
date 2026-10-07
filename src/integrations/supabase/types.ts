@@ -234,6 +234,51 @@ export type Database = {
           },
         ]
       }
+      class_subjects: {
+        Row: {
+          class_id: string
+          created_at: string
+          display_order: number
+          id: string
+          maximum_marks: number
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          maximum_marks?: number
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          maximum_marks?: number
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_teachers: {
         Row: {
           class_id: string
