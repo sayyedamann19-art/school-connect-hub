@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
+
+import { PrintableMarksheet } from "@/components/academics/printable-marksheet";
+import { Button } from "@/components/ui/button";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { getStudentExamResult } from "@/lib/academics.functions";
@@ -53,7 +56,13 @@ function ExamResultPage() {
 
   return (
     <div className="space-y-6">
-      {back}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {back}
+        <Button onClick={() => window.print()}>
+          <Printer className="size-4" /> Print Marksheet
+        </Button>
+      </div>
+      <PrintableMarksheet exam={d.exam} student={d.student} classInfo={d.classInfo} results={d.results} summary={s} />
       <header>
         <h1 className="page-title">{d.exam.name}</h1>
         <p className="meta-text mt-1.5">
