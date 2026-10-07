@@ -3,7 +3,13 @@ import { Bell, LogOut, Menu } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
-import { appName, bottomNavByRole, navByRole, roleLabel } from "@/components/layout/nav-config";
+import {
+  appName,
+  bottomNavByRole,
+  navByRole,
+  roleLabel,
+  type NavItem,
+} from "@/components/layout/nav-config";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,32 +45,86 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function isItemActive(item: NavItem, pathname: string) {
+  return [item.to, ...(item.alsoActive ?? [])].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
+function NavLinkItem({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const active = isItemActive(item, pathname);
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      <item.icon className="size-[1.125rem]" strokeWidth={1.75} />
+      {item.label}
+    </Link>
+  );
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const items = primaryRole ? navByRole[primaryRole] : [];
+  const grouped = items.some((item) => item.group);
+
+  if (!grouped) {
+    return (
+      <nav className="space-y-1">
+        {items.map((item) => (
+          <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
+      </nav>
+    );
+  }
+
+  const groups: { name: string; items: NavItem[] }[] = [];
+  const ungrouped: NavItem[] = [];
+  for (const item of items) {
+    if (!item.group) {
+      ungrouped.push(item);
+      continue;
+    }
+    const existing = groups.find((group) => group.name === item.group);
+    if (existing) existing.items.push(item);
+    else groups.push({ name: item.group, items: [item] });
+  }
 
   return (
-    <nav className="space-y-1">
-      {items.map((item) => {
-        const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-        return (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
-              active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <item.icon className="size-[1.125rem]" strokeWidth={1.75} />
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav className="space-y-5">
+      {groups.map((group) => (
+        <div key={group.name} className="space-y-1">
+          <p className="px-3 pb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {group.name}
+          </p>
+          {group.items.map((item) => (
+            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+          ))}
+        </div>
+      ))}
+      {ungrouped.length ? (
+        <div className="space-y-1 border-t border-sidebar-border pt-4">
+          {ungrouped.map((item) => (
+            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+          ))}
+        </div>
+      ) : null}
     </nav>
   );
 }
