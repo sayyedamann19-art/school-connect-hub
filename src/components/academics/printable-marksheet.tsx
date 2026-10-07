@@ -53,10 +53,10 @@ export function PrintableMarksheet({
         <tbody>
           {[0, 2, 4].map((i) => (
             <tr key={i}>
-              <th style={{ ...cell, textAlign: "left", width: "18%" }}>{info[i][0]}</th>
-              <td style={{ ...cell, width: "32%" }}>{info[i][1]}</td>
-              <th style={{ ...cell, textAlign: "left", width: "18%" }}>{info[i + 1][0]}</th>
-              <td style={{ ...cell, width: "32%" }}>{info[i + 1][1]}</td>
+              <th style={{ ...cell, textAlign: "left", width: "18%" }}>{info[i]?.[0]}</th>
+              <td style={{ ...cell, width: "32%" }}>{info[i]?.[1]}</td>
+              <th style={{ ...cell, textAlign: "left", width: "18%" }}>{info[i + 1]?.[0]}</th>
+              <td style={{ ...cell, width: "32%" }}>{info[i + 1]?.[1]}</td>
             </tr>
           ))}
         </tbody>
