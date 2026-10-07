@@ -58,7 +58,7 @@ function NavLinkItem({
 }: {
   item: NavItem;
   pathname: string;
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
 }) {
   const active = isItemActive(item, pathname);
   return (
