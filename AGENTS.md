@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Academics: exams/subjects/results are separate tables; parents see results only when the exam status is published (RLS via exam_is_published), teachers can write only draft exams — keeps partial marks hidden from parents.
+- Academics: per-class subject format lives in class_subjects (layout + default max only); results stay in academic_results so template edits never alter recorded marks.

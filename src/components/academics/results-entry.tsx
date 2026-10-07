@@ -15,7 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SubjectTemplateEditor } from "@/components/academics/subject-template-editor";
 import {
+  getClassTemplate,
   getExamSheet,
   listAcademicClasses,
   listAcademicSetup,
@@ -44,7 +46,7 @@ export function ResultsEntry() {
   const classesQuery = useQuery({ queryKey: ["academics", "classes"], queryFn: () => listAcademicClasses() });
 
   const exams = (setupQuery.data?.exams ?? []).filter((e) => e.is_active);
-  const subjects = (setupQuery.data?.subjects ?? []).filter((s) => s.is_active);
+  const allSubjects = setupQuery.data?.subjects ?? [];
   const years = Array.from(new Set(exams.map((e) => e.academic_year)));
 
   const [year, setYear] = useState<string | null>(null);
@@ -60,6 +62,14 @@ export function ResultsEntry() {
   const klass = yearClasses.find((c) => c.id === classId) ?? yearClasses[0] ?? null;
   const isAdmin = classesQuery.data?.isAdmin ?? false;
   const locked = exam?.status === "published" && !isAdmin;
+
+  const templateQuery = useQuery({
+    queryKey: ["academics", "template", klass?.id],
+    enabled: Boolean(klass),
+    queryFn: () => getClassTemplate({ data: { classId: klass!.id } }),
+  });
+  const template = templateQuery.data?.items ?? [];
+  const templateMax = new Map(template.map((t) => [t.subject_id, String(t.maximum_marks)]));
 
   const sheetQuery = useQuery({
     queryKey: ["academics", "sheet", exam?.id, klass?.id],
@@ -83,8 +93,43 @@ export function ResultsEntry() {
 
   const students = sheetQuery.data?.students ?? [];
 
+  // Class template decides the subject layout; subjects with already-recorded
+  // marks stay visible so historical results are never hidden or lost.
+  const recordedIds = new Set((sheetQuery.data?.results ?? []).map((r) => r.subject_id));
+  const subjects =
+    template.length > 0
+      ? [
+          ...template.flatMap((t) => allSubjects.filter((s) => s.id === t.subject_id)),
+          ...allSubjects.filter((s) => recordedIds.has(s.id) && !templateMax.has(s.id)),
+        ]
+      : allSubjects.filter((s) => s.is_active || recordedIds.has(s.id));
+
   const cellOf = (key: string): Cell =>
-    cells[key] ?? { status: "present", marks: "", max: defaultMax, saved: false };
+    cells[key] ?? {
+      status: "present",
+      marks: "",
+      max: templateMax.get(key.split(":")[1] ?? "") ?? defaultMax,
+      saved: false,
+    };
+
+  function liveSummary(studentId: string) {
+    let obtained = 0;
+    let maximum = 0;
+    let filled = 0;
+    for (const subject of subjects) {
+      const cell = cellOf(`${studentId}:${subject.id}`);
+      if (cell.status !== "present") { filled += 1; continue; }
+      if (cell.marks.trim() === "") continue;
+      const m = Number(cell.marks);
+      const max = Number(cell.max);
+      if (Number.isNaN(m) || !(max > 0)) continue;
+      obtained += m;
+      maximum += max;
+      filled += 1;
+    }
+    const percent = maximum > 0 ? ((obtained / maximum) * 100).toFixed(2) : null;
+    return { obtained, maximum, percent, filled, total: subjects.length };
+  }
 
   function update(key: string, patch: Partial<Cell>) {
     setCells((prev) => ({ ...prev, [key]: { ...cellOf(key), ...patch } }));
@@ -147,7 +192,7 @@ export function ResultsEntry() {
     );
   if (exams.length === 0)
     return <EmptyState title="No exams set up" description="An administrator needs to add exams first." />;
-  if (subjects.length === 0)
+  if (allSubjects.length === 0)
     return <EmptyState title="No subjects set up" description="An administrator needs to add subjects first." />;
 
   return (
@@ -197,6 +242,16 @@ export function ResultsEntry() {
               : "Parents see these results only after an administrator publishes the exam."}
           </p>
         </div>
+      ) : null}
+
+      {klass ? (
+        <SubjectTemplateEditor
+          classId={klass.id}
+          classLabel={classLabel(klass)}
+          subjects={allSubjects}
+          template={template}
+          loading={templateQuery.isLoading}
+        />
       ) : null}
 
       {!klass ? (
@@ -270,6 +325,23 @@ export function ResultsEntry() {
                     );
                   })}
                 </div>
+                {(() => {
+                  const live = liveSummary(student.id);
+                  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2">
+                      <span className="text-sm text-foreground">
+                        Total <span className="font-bold">{fmt(live.obtained)} / {fmt(live.maximum)}</span>
+                        {live.filled < live.total ? (
+                          <span className="meta-text"> · {live.total - live.filled} subject{live.total - live.filled === 1 ? "" : "s"} left</span>
+                        ) : null}
+                      </span>
+                      <span className="metric-number text-base text-foreground" aria-live="polite">
+                        {live.percent !== null ? `${live.percent}%` : "—"}
+                      </span>
+                    </div>
+                  );
+                })()}
               </li>
             ))}
           </ul>

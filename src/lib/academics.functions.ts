@@ -94,6 +94,19 @@ function mapResults(rows: Sb[]): ResultRow[] {
     .sort((a: ResultRow, b: ResultRow) => a.subject_order - b.subject_order || a.subject_name.localeCompare(b.subject_name));
 }
 
+/** Number of subjects expected for a class: its template, or all active subjects when none is set. */
+async function expectedSubjectCount(supabase: Sb, classId: string | null): Promise<number> {
+  if (classId) {
+    const { count } = await supabase
+      .from("class_subjects")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", classId);
+    if (count && count > 0) return count;
+  }
+  const { count } = await supabase.from("subjects").select("id", { count: "exact", head: true }).eq("is_active", true);
+  return count ?? 0;
+}
+
 /* ----------------------------- Shared reads ----------------------------- */
 
 export const listAcademicSetup = createServerFn({ method: "GET" })
@@ -135,9 +148,9 @@ export const getStudentAcademics = createServerFn({ method: "GET" })
         .order("display_order", { ascending: true }),
       supabase
         .from("academic_results")
-        .select("id, exam_id, subject_id, status, marks_obtained, maximum_marks, subject:subjects(name, display_order)")
+        .select("id, exam_id, subject_id, class_id, status, marks_obtained, maximum_marks, subject:subjects(name, display_order)")
         .eq("student_id", data.studentId),
-      supabase.from("subjects").select("id").eq("is_active", true),
+      supabase.from("students").select("class_id").eq("id", data.studentId).maybeSingle(),
     ]);
     if (examsRes.error) throw new Error(examsRes.error.message);
     if (resultsRes.error) throw new Error(resultsRes.error.message);
@@ -149,12 +162,20 @@ export const getStudentAcademics = createServerFn({ method: "GET" })
       list.push(row);
       byExam.set(row.exam_id, list);
     }
-    const expected = (subjectsRes.data ?? []).length;
+    const expectedCache = new Map<string, number>();
+    const expectedFor = async (classId: string | null) => {
+      const key = classId ?? "";
+      if (!expectedCache.has(key)) expectedCache.set(key, await expectedSubjectCount(supabase, classId));
+      return expectedCache.get(key)!;
+    };
+    const studentClass = (subjectsRes.data as Sb)?.class_id ?? null;
 
     const years = new Map<string, StudentExamCard[]>();
     for (const exam of (examsRes.data ?? []) as AcademicExam[]) {
       const published = exam.status === "published";
-      const rows = mapResults(byExam.get(exam.id) ?? []);
+      const raw = byExam.get(exam.id) ?? [];
+      const rows = mapResults(raw);
+      const expected = rows.length > 0 ? await expectedFor(raw[0]?.class_id ?? studentClass) : 0;
       const card: StudentExamCard = {
         exam,
         published,
@@ -176,37 +197,44 @@ export const getStudentExamResult = createServerFn({ method: "GET" })
       context,
     }): Promise<{
       exam: AcademicExam | null;
-      student: { full_name: string } | null;
+      student: { full_name: string; gr_number: string; roll_number: string | null } | null;
       className: string | null;
+      classInfo: { name: string; division: string | null } | null;
       results: ResultRow[];
       summary: ExamSummary | null;
     }> => {
       const { supabase } = context;
-      const [examRes, studentRes, resultsRes, subjectsRes] = await Promise.all([
+      const [examRes, studentRes, resultsRes] = await Promise.all([
         supabase.from("academic_exams").select(EXAM_COLUMNS).eq("id", data.examId).maybeSingle(),
-        supabase.from("students").select("full_name, class:classes(name, division)").eq("id", data.studentId).maybeSingle(),
+        supabase.from("students").select("full_name, gr_number, roll_number, class_id, class:classes(name, division)").eq("id", data.studentId).maybeSingle(),
         supabase
           .from("academic_results")
-          .select("id, subject_id, status, marks_obtained, maximum_marks, class:classes(name, division), subject:subjects(name, display_order)")
+          .select("id, subject_id, class_id, status, marks_obtained, maximum_marks, class:classes(name, division), subject:subjects(name, display_order)")
           .eq("student_id", data.studentId)
           .eq("exam_id", data.examId),
-        supabase.from("subjects").select("id").eq("is_active", true),
       ]);
       if (examRes.error) throw new Error(examRes.error.message);
       if (studentRes.error) throw new Error(studentRes.error.message);
       if (resultsRes.error) throw new Error(resultsRes.error.message);
       // Student not readable through RLS → not linked / not authorised.
-      if (!studentRes.data) return { exam: null, student: null, className: null, results: [], summary: null };
+      if (!studentRes.data)
+        return { exam: null, student: null, className: null, classInfo: null, results: [], summary: null };
 
       const results = mapResults(resultsRes.data ?? []);
       const klass = (resultsRes.data?.[0] as Sb)?.class ?? (studentRes.data as Sb).class ?? null;
       const className = klass ? (klass.division ? `${klass.name}-${klass.division}` : klass.name) : null;
+      const st = studentRes.data as Sb;
+      const expected =
+        results.length > 0
+          ? await expectedSubjectCount(supabase, (resultsRes.data?.[0] as Sb)?.class_id ?? st.class_id ?? null)
+          : 0;
       return {
         exam: (examRes.data as AcademicExam) ?? null,
-        student: { full_name: studentRes.data.full_name },
+        student: { full_name: st.full_name, gr_number: st.gr_number, roll_number: st.roll_number ?? null },
         className,
+        classInfo: klass ? { name: klass.name, division: klass.division ?? null } : null,
         results,
-        summary: results.length > 0 ? summarise(results, (subjectsRes.data ?? []).length) : null,
+        summary: results.length > 0 ? summarise(results, expected) : null,
       };
     },
   );
@@ -445,4 +473,76 @@ export const adminSaveSubject = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("subjects").update(patch).eq("id", data.subjectId);
     if (error) throw new Error(error.code === "23505" ? "This subject already exists" : error.message);
     return { ok: true };
+  });
+
+/* --------------------------- Class subject template --------------------------- */
+
+export type TemplateItem = { subject_id: string; display_order: number; maximum_marks: number };
+
+/** A class's default subject format. Empty means "use all active subjects". */
+export const getClassTemplate = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ classId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ items: TemplateItem[] }> => {
+    await assertManagesClass(context.supabase, data.classId);
+    const { data: rows, error } = await context.supabase
+      .from("class_subjects")
+      .select("subject_id, display_order, maximum_marks")
+      .eq("class_id", data.classId)
+      .order("display_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    return {
+      items: (rows ?? []).map((r) => ({
+        subject_id: r.subject_id,
+        display_order: r.display_order,
+        maximum_marks: Number(r.maximum_marks),
+      })),
+    };
+  });
+
+/**
+ * Replaces a class's subject format. Only the template rows change — recorded
+ * exam results live in academic_results and are never touched here.
+ */
+export const saveClassTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        items: z
+          .array(z.object({ subjectId: z.string().uuid(), maxMarks: z.number().positive().max(1000) }))
+          .max(40),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    await assertManagesClass(supabase, data.classId);
+    const ids = data.items.map((i) => i.subjectId);
+    if (new Set(ids).size !== ids.length) throw new Error("Each subject can appear only once");
+    const { data: current, error } = await supabase
+      .from("class_subjects")
+      .select("id, subject_id")
+      .eq("class_id", data.classId);
+    if (error) throw new Error(error.message);
+    const removed = (current ?? []).filter((r) => !ids.includes(r.subject_id)).map((r) => r.id);
+    if (removed.length > 0) {
+      const { error: delError } = await supabase.from("class_subjects").delete().in("id", removed);
+      if (delError) throw new Error(delError.message);
+    }
+    if (data.items.length > 0) {
+      const { error: upError } = await supabase.from("class_subjects").upsert(
+        data.items.map((i, idx) => ({
+          class_id: data.classId,
+          subject_id: i.subjectId,
+          display_order: idx + 1,
+          maximum_marks: i.maxMarks,
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "class_id,subject_id" },
+      );
+      if (upError) throw new Error(upError.message);
+    }
+    return { ok: true, count: data.items.length };
   });
