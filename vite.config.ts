@@ -18,7 +18,7 @@ export default defineConfig({
       // ExcelJS's Node entry pulls Node-only modules through createRequire, which
       // crashes the edge server on cold start. Its self-contained browser build
       // is all the app needs (workbooks are only built/parsed in the browser).
-      alias: { exceljs: "exceljs/dist/exceljs.min.js" },
+      alias: [{ find: /^exceljs$/, replacement: "exceljs/dist/exceljs.min.js" }],
     },
   },
   plugins: [
