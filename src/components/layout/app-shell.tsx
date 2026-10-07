@@ -181,7 +181,7 @@ function MobileNavBar() {
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch px-2 py-1.5">
         {items.map((item) => {
-          const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+          const active = isItemActive(item, pathname);
           return (
             <Link
               key={item.to}
@@ -221,7 +221,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar px-4 py-5 lg:flex">
         <BrandMark />
-        <div className="mt-8 flex-1">
+        <div className="mt-8 flex-1 overflow-y-auto">
           <NavLinks />
         </div>
         <p className="meta-text">Student records are private to linked accounts.</p>
