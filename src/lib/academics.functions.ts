@@ -204,7 +204,7 @@ export const getStudentExamResult = createServerFn({ method: "GET" })
       summary: ExamSummary | null;
     }> => {
       const { supabase } = context;
-      const [examRes, studentRes, resultsRes, subjectsRes] = await Promise.all([
+      const [examRes, studentRes, resultsRes] = await Promise.all([
         supabase.from("academic_exams").select(EXAM_COLUMNS).eq("id", data.examId).maybeSingle(),
         supabase.from("students").select("full_name, gr_number, roll_number, class_id, class:classes(name, division)").eq("id", data.studentId).maybeSingle(),
         supabase
