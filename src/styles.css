@@ -293,3 +293,15 @@
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
+
+/* Printable marksheet: only the portal-mounted sheet is printed. */
+.marksheet-print { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body > *:not(.marksheet-print) { display: none !important; }
+  .marksheet-print { display: block; color: #000; background: #fff; font-size: 11pt; }
+  .marksheet-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .marksheet-print table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+  .marksheet-print tr { page-break-inside: avoid; }
+  .marksheet-print th, .marksheet-print td { border: 1px solid #000; padding: 6px 8px; }
+}
