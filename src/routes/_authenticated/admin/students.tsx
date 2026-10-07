@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, Pencil, Plus, Upload } from "lucide-react";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -41,6 +42,8 @@ import { listClasses, listManagedStudents, updateStudent } from "@/lib/students.
 
 
 export const Route = createFileRoute("/_authenticated/admin/students")({
+  validateSearch: (search: Record<string, unknown>): { classId?: string } =>
+    typeof search["classId"] === "string" ? { classId: search["classId"] } : {},
   head: () => ({
     meta: [
       { title: "Student records — Dawn Breakers School Admin" },
@@ -68,7 +71,8 @@ type Student = Awaited<ReturnType<typeof listManagedStudents>>[number];
 function StudentsAdmin() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [classId, setClassId] = useState<string>("all");
+  const initialClass = Route.useSearch().classId;
+  const [classId, setClassId] = useState<string>(initialClass ?? "all");
   const [editing, setEditing] = useState<Student | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -99,6 +103,13 @@ function StudentsAdmin() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/admin/classes"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="size-4" />
+        Classes
+      </Link>
       <PageHeader
         title="Student records"
         description="Manual edits and Excel imports update the same student records parents see."

@@ -49,6 +49,10 @@ export type NavItem = {
   label: string;
   to: NavPath;
   icon: LucideIcon;
+  /** Optional sidebar section heading this item belongs to. */
+  group?: string;
+  /** Extra paths that should highlight this item (e.g. pages reached through it). */
+  alsoActive?: NavPath[];
 };
 
 export const navByRole: Record<AppRole, NavItem[]> = {
@@ -72,16 +76,15 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Account", to: "/account", icon: UserRound },
   ],
   admin: [
-    { label: "Overview", to: "/admin", icon: LayoutDashboard },
-    { label: "Students", to: "/admin/students", icon: Users },
-    { label: "Classes", to: "/admin/classes", icon: School },
-    { label: "Teachers", to: "/admin/teachers", icon: GraduationCap },
-    { label: "Parents", to: "/admin/parents", icon: Link2 },
-    { label: "Attendance", to: "/admin/attendance", icon: CalendarCheck },
-    { label: "Academics", to: "/admin/academics", icon: BookOpen },
-    { label: "Updates", to: "/admin/updates", icon: Bell },
-    { label: "Import", to: "/admin/import", icon: Upload },
-    { label: "History", to: "/admin/imports", icon: History },
+    { label: "Overview", to: "/admin", icon: LayoutDashboard, group: "Overview" },
+    { label: "Classes", to: "/admin/classes", icon: School, group: "School", alsoActive: ["/admin/students"] },
+    { label: "Teachers", to: "/admin/teachers", icon: GraduationCap, group: "School" },
+    { label: "Parents", to: "/admin/parents", icon: Link2, group: "School" },
+    { label: "Attendance", to: "/admin/attendance", icon: CalendarCheck, group: "School" },
+    { label: "Academics", to: "/admin/academics", icon: BookOpen, group: "School" },
+    { label: "Updates", to: "/admin/updates", icon: Bell, group: "Communication" },
+    { label: "Import", to: "/admin/import", icon: Upload, group: "More" },
+    { label: "History", to: "/admin/imports", icon: History, group: "More" },
     { label: "Account", to: "/account", icon: UserRound },
   ],
 };
@@ -96,7 +99,7 @@ const bottomNavPaths: Record<AppRole, NavPath[]> = {
     "/teacher/character",
     "/account",
   ],
-  admin: ["/admin", "/admin/students", "/admin/classes", "/admin/teachers", "/account"],
+  admin: ["/admin", "/admin/classes", "/admin/teachers", "/admin/parents", "/account"],
 };
 
 export const bottomNavByRole: Record<AppRole, NavItem[]> = {

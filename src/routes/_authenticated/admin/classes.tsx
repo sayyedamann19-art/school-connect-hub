@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Pencil, Plus, School } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronRight, Loader2, Pencil, Plus, School } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +49,21 @@ function defaultAcademicYear() {
   return `${start}-${start + 1}`;
 }
 
+function groupByClass(rows: AdminClass[]) {
+  const groups = new Map<
+    string,
+    { key: string; name: string; year: string; students: number; divisions: AdminClass[] }
+  >();
+  for (const row of rows) {
+    const key = `${row.academic_year}::${row.name}`;
+    const group = groups.get(key) ?? { key, name: row.name, year: row.academic_year, students: 0, divisions: [] };
+    group.divisions.push(row);
+    group.students += row.studentCount;
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
 function ClassesAdmin() {
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; row: AdminClass } | null>(
     null,
@@ -61,7 +75,7 @@ function ClassesAdmin() {
     <div className="space-y-6">
       <PageHeader
         title="Classes & divisions"
-        description="Classes drive teacher assignment, attendance and the class shown on every student record."
+        description="Open a division to see and manage its students."
         action={
           <Button onClick={() => setDialog({ mode: "create" })}>
             <Plus className="mr-2 size-4" />
@@ -85,32 +99,61 @@ function ClassesAdmin() {
           icon={<School className="size-5" strokeWidth={1.75} />}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {(classesQuery.data ?? []).map((row) => (
+        <div className="space-y-4">
+          {groupByClass(classesQuery.data ?? []).map((group) => (
             <SectionCard
-              key={row.id}
-              title={`${row.name}${row.division ? `-${row.division}` : ""}`}
-              description={`${row.academic_year} · ${row.studentCount} student${row.studentCount === 1 ? "" : "s"}`}
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setDialog({ mode: "edit", row })}>
-                  <Pencil className="mr-2 size-4" />
-                  Edit
-                </Button>
-              }
+              key={group.key}
+              title={group.name}
+              description={`${group.year} · ${group.divisions.length} division${group.divisions.length === 1 ? "" : "s"} · ${group.students} student${group.students === 1 ? "" : "s"}`}
+              contentClassName="p-0"
             >
-              {row.teachers.length === 0 ? (
-                <p className="meta-text">No teacher assigned yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {row.teachers.map((teacher) => (
-                    <Badge key={teacher.assignmentId} variant="outline">
-                      {teacher.name}
-                      {teacher.subject ? ` · ${teacher.subject}` : ""}
-                      {teacher.isClassTeacher ? " · class teacher" : ""}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <ul className="divide-y divide-border">
+                {group.divisions.map((row) => (
+                  <li
+                    key={row.id}
+                    className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <Link
+                      to="/admin/students"
+                      search={{ classId: row.id }}
+                      className="group flex min-w-0 flex-1 items-center gap-3"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-sm font-bold text-primary">
+                        {row.division || "—"}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-foreground group-hover:underline">
+                          {row.division ? `Division ${row.division}` : "No division"}
+                          <span className="font-normal text-muted-foreground">
+                            {" · "}
+                            {row.studentCount} student{row.studentCount === 1 ? "" : "s"}
+                          </span>
+                        </span>
+                        <span className="meta-text block truncate">
+                          {row.teachers.length === 0
+                            ? "No teacher assigned yet"
+                            : row.teachers
+                                .map(
+                                  (t) =>
+                                    `${t.name}${t.subject ? ` (${t.subject})` : ""}${t.isClassTeacher ? " · class teacher" : ""}`,
+                                )
+                                .join(", ")}
+                        </span>
+                      </span>
+                      <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="self-start sm:self-auto"
+                      onClick={() => setDialog({ mode: "edit", row })}
+                    >
+                      <Pencil className="mr-2 size-4" />
+                      Edit
+                    </Button>
+                  </li>
+                ))}
+              </ul>
             </SectionCard>
           ))}
         </div>
