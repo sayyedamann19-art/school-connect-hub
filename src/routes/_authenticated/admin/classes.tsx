@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Pencil, Plus, School } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronRight, Loader2, Pencil, Plus, School } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +49,21 @@ function defaultAcademicYear() {
   return `${start}-${start + 1}`;
 }
 
+function groupByClass(rows: AdminClass[]) {
+  const groups = new Map<
+    string,
+    { key: string; name: string; year: string; students: number; divisions: AdminClass[] }
+  >();
+  for (const row of rows) {
+    const key = `${row.academic_year}::${row.name}`;
+    const group = groups.get(key) ?? { key, name: row.name, year: row.academic_year, students: 0, divisions: [] };
+    group.divisions.push(row);
+    group.students += row.studentCount;
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
 function ClassesAdmin() {
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; row: AdminClass } | null>(
     null,
@@ -61,7 +75,7 @@ function ClassesAdmin() {
     <div className="space-y-6">
       <PageHeader
         title="Classes & divisions"
-        description="Classes drive teacher assignment, attendance and the class shown on every student record."
+        description="Open a division to see and manage its students."
         action={
           <Button onClick={() => setDialog({ mode: "create" })}>
             <Plus className="mr-2 size-4" />
