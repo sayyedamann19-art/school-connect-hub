@@ -53,7 +53,9 @@ export function SubjectTemplateEditor({
       const next = [...prev];
       const j = i + d;
       if (j < 0 || j >= next.length) return prev;
-      [next[i], next[j]] = [next[j], next[i]];
+      const tmp = next[i]!;
+      next[i] = next[j]!;
+      next[j] = tmp;
       return next;
     });
 

@@ -108,7 +108,7 @@ export function ResultsEntry() {
     cells[key] ?? {
       status: "present",
       marks: "",
-      max: templateMax.get(key.split(":")[1]) ?? defaultMax,
+      max: templateMax.get(key.split(":")[1] ?? "") ?? defaultMax,
       saved: false,
     };
 
