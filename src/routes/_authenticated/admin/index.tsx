@@ -1,17 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, Link2, School, Users } from "lucide-react";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { GraduationCap, School, UserRound, Users } from "lucide-react";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { StatCard } from "@/components/common/stat-card";
 import { ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
-import { Button } from "@/components/ui/button";
-import type { NavPath } from "@/components/layout/nav-config";
+import { adminAttendanceReport, adminListClasses, adminListParents } from "@/lib/admin.functions";
 import { getAdminOverview } from "@/lib/school.functions";
-
-type NavTarget = NavPath;
-
+import { adminListUpdates } from "@/lib/updates.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({
@@ -20,16 +17,15 @@ export const Route = createFileRoute("/_authenticated/admin/")({
       {
         name: "description",
         content:
-          "Admin area for managing students, classes, teachers and parent–student links across Dawn Breakers School.",
+          "At-a-glance dashboard: students, classes, teachers, parents, today's attendance and recent updates at Dawn Breakers School.",
       },
       { property: "og:title", content: "School overview — Dawn Breakers School Admin" },
       {
         property: "og:description",
-        content: "Manage students, classes, teachers and parent–student links across the school.",
+        content: "Students, classes, teachers, parents, today's attendance and recent school updates.",
       },
     ],
   }),
-
   component: () => (
     <RoleGate role="admin">
       <AdminArea />
@@ -37,94 +33,138 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   ),
 });
 
-const managementSections: { title: string; description: string; to: NavTarget; cta: string }[] = [
-  {
-    title: "Students",
-    description: "Add students, set class and division, roll number, date of birth and photo.",
-    to: "/admin/students",
-    cta: "Manage students",
-  },
-  {
-    title: "Classes & divisions",
-    description: "Create classes per academic year and see their strength.",
-    to: "/admin/classes",
-    cta: "Manage classes",
-  },
-  {
-    title: "Teachers",
-    description: "Add teacher logins and assign them to classes and subjects.",
-    to: "/admin/teachers",
-    cta: "Manage teachers",
-  },
-  {
-    title: "Parents",
-    description: "Search parent accounts, link or unlink children and suspend a login.",
-    to: "/admin/parents",
-    cta: "Manage parents",
-  },
-  {
-    title: "Attendance reports",
-    description: "Class attendance totals and percentages for any date range.",
-    to: "/admin/attendance",
-    cta: "Open reports",
-  },
-  {
-    title: "School updates",
-    description: "Write and publish notices that parents read in the Updates area.",
-    to: "/admin/updates",
-    cta: "Manage updates",
-  },
-  {
-    title: "Excel import",
-    description: "Bulk-add students from the official workbook, and review past imports.",
-    to: "/admin/import",
-    cta: "Open importer",
-  },
-];
-
+function todayIso() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
 
 function AdminArea() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin", "overview"],
-    queryFn: () => getAdminOverview(),
+  const today = todayIso();
+  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: () => getAdminOverview() });
+  const parents = useQuery({
+    queryKey: ["admin", "parents", ""],
+    queryFn: () => adminListParents({ data: {} }),
+  });
+  const classes = useQuery({ queryKey: ["admin", "classes"], queryFn: () => adminListClasses() });
+  const updates = useQuery({ queryKey: ["admin", "updates"], queryFn: () => adminListUpdates() });
+
+  const reports = useQueries({
+    queries: (classes.data ?? []).map((row) => ({
+      queryKey: ["admin", "attendance-report", row.id, today, today],
+      queryFn: () => adminAttendanceReport({ data: { classId: row.id, from: today, to: today } }),
+    })),
   });
 
-  if (isLoading) return <LoadingCards count={4} />;
-
-  if (isError) {
+  if (overview.isLoading) return <LoadingCards count={4} />;
+  if (overview.isError) {
     return (
       <ErrorState
         title="We couldn't load the school overview"
         description="Please try again in a moment."
-        onRetry={() => void refetch()}
+        onRetry={() => void overview.refetch()}
       />
     );
   }
 
+  const reportsLoading = classes.isLoading || reports.some((r) => r.isLoading);
+  const totals = reports.reduce(
+    (acc, r) => {
+      const t = r.data?.totals;
+      if (!t) return acc;
+      acc.present += t.present;
+      acc.absent += t.absent;
+      acc.late += t.late;
+      acc.leftEarly += t.leftEarly;
+      acc.other += t.other;
+      acc.total += t.total;
+      return acc;
+    },
+    { present: 0, absent: 0, late: 0, leftEarly: 0, other: 0, total: 0 },
+  );
+  const percent = totals.total ? Math.round((totals.present / totals.total) * 100) : null;
+  const classesMarked = reports.filter((r) => (r.data?.totals.total ?? 0) > 0).length;
+  const recentUpdates = (updates.data ?? []).slice(0, 4);
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="School overview"
-        description="Full management access to students, classes, teachers and family links."
-      />
+      <PageHeader title="School overview" description="A quick look at today across the school." />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Students" value={data?.students ?? 0} icon={Users} />
-        <StatCard label="Classes" value={data?.classes ?? 0} icon={School} />
-        <StatCard label="Teachers" value={data?.teachers ?? 0} icon={GraduationCap} />
-        <StatCard label="Parent links" value={data?.parentLinks ?? 0} icon={Link2} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard label="Students" value={overview.data?.students ?? 0} icon={Users} />
+        <StatCard label="Classes" value={overview.data?.classes ?? 0} icon={School} />
+        <StatCard label="Teachers" value={overview.data?.teachers ?? 0} icon={GraduationCap} />
+        <StatCard
+          label="Parents"
+          value={parents.isLoading ? "…" : (parents.data?.length ?? 0)}
+          icon={UserRound}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {managementSections.map((section) => (
-          <SectionCard key={section.title} title={section.title} description={section.description}>
-            <Button asChild variant="outline">
-              <Link to={section.to}>{section.cta}</Link>
-            </Button>
-          </SectionCard>
-        ))}
-      </div>
+        <SectionCard
+          title="Today's attendance"
+          description={new Date().toLocaleDateString(undefined, {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
+        >
+          {reportsLoading ? (
+            <p className="meta-text">Loading…</p>
+          ) : totals.total === 0 ? (
+            <p className="meta-text">No attendance has been marked yet today.</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-end justify-between gap-3">
+                <p className="text-3xl font-bold leading-none tabular-nums text-foreground">
+                  {percent}%
+                  <span className="ml-2 text-sm font-medium text-muted-foreground">present</span>
+                </p>
+                <p className="meta-text">
+                  {classesMarked} of {classes.data?.length ?? 0} classes marked
+                </p>
+              </div>
+              <dl className="grid grid-cols-3 gap-2 text-center sm:grid-cols-5">
+                {[
+                  ["Present", totals.present],
+                  ["Absent", totals.absent],
+                  ["Late", totals.late],
+                  ["Left early", totals.leftEarly],
+                  ["Other", totals.other],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg bg-muted px-2 py-2">
+                    <dd className="text-lg font-bold tabular-nums text-foreground">{value}</dd>
+                    <dt className="meta-text">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </SectionCard>
 
+        <SectionCard title="Recent updates" contentClassName="p-0">
+          {updates.isLoading ? (
+            <p className="meta-text px-5 py-5">Loading…</p>
+          ) : recentUpdates.length === 0 ? (
+            <p className="meta-text px-5 py-5">No school updates yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentUpdates.map((update) => (
+                <li key={update.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-semibold text-foreground">{update.title}</p>
+                    <span className="meta-text shrink-0">
+                      {update.is_published ? "Published" : "Draft"}
+                    </span>
+                  </div>
+                  <p className="meta-text mt-0.5 line-clamp-1">{update.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }
