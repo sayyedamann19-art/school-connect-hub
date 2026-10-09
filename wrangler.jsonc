@@ -1,0 +1,9 @@
+// Cloudflare deployment settings, merged by the build into dist/server/wrangler.json.
+// Only PUBLIC values belong here (the publishable key is browser-safe by design).
+// Never put a service-role key or any private secret in this file.
+{
+  "vars": {
+    "SUPABASE_URL": "https://c--e2d9199d-8106-4437-bb9b-5fe7dc4b640e-prod.lovable.cloud",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_9B7k_2np835d4nFNsKKzCQ_mzGuhM3C"
+  }
+}
