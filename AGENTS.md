@@ -13,3 +13,4 @@
 - Academics: per-class subject format lives in class_subjects (layout + default max only); results stay in academic_results so template edits never alter recorded marks.
 - Alias `exceljs` to its browser build in vite.config.ts — the Node entry needs createRequire, which crashed the edge server on cold start.
 - Resolve shared school branding asset pointers against the project's Lovable asset-serving origin in `src/lib/brand.ts` — external hosts do not serve the root-relative `/__l5e/assets-v1/` endpoint.
+- Self-hosted Cloudflare deploys get the public backend URL and publishable key at runtime from `vars` in root `wrangler.jsonc` (merged into the generated wrangler.json) — server functions read process.env, which Cloudflare otherwise leaves empty; never put private secrets there.
