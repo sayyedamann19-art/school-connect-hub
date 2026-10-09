@@ -12,3 +12,4 @@
 - Academics: exams/subjects/results are separate tables; parents see results only when the exam status is published (RLS via exam_is_published), teachers can write only draft exams — keeps partial marks hidden from parents.
 - Academics: per-class subject format lives in class_subjects (layout + default max only); results stay in academic_results so template edits never alter recorded marks.
 - Alias `exceljs` to its browser build in vite.config.ts — the Node entry needs createRequire, which crashed the edge server on cold start.
+- Resolve shared school branding asset pointers against the project's Lovable asset-serving origin in `src/lib/brand.ts` — external hosts do not serve the root-relative `/__l5e/assets-v1/` endpoint.
