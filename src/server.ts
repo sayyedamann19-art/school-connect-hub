@@ -44,9 +44,28 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// Hosts outside Lovable (e.g. Cloudflare Pages) may not inject the PUBLIC backend
+// address/publishable key into the server runtime. Fall back to the same public
+// values baked into the browser build. Never add private secrets here.
+function ensurePublicBackendEnv(env: unknown) {
+  const g = globalThis as { process?: { env?: Record<string, string | undefined> } };
+  g.process ??= {};
+  g.process.env ??= {};
+  const pe = g.process.env;
+  const bindings = (env ?? {}) as Record<string, unknown>;
+  const pick = (key: string, fallback: string | undefined) => {
+    if (pe[key]) return;
+    const fromBinding = bindings[key];
+    pe[key] = typeof fromBinding === "string" && fromBinding ? fromBinding : fallback;
+  };
+  pick("SUPABASE_URL", import.meta.env.VITE_SUPABASE_URL);
+  pick("SUPABASE_PUBLISHABLE_KEY", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      ensurePublicBackendEnv(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
