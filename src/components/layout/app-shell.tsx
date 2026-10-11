@@ -212,6 +212,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { session, primaryRole } = useAuth();
   const isParent = Boolean(session) && primaryRole === "parent";
   const { unread } = useParentUpdates(isParent);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
     <div className="min-h-screen bg-background">
@@ -265,7 +266,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:pb-12">
-          {children}
+          <div key={pathname} className="page-enter">
+            {children}
+          </div>
         </main>
       </div>
 
