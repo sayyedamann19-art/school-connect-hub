@@ -1,1 +1,6 @@
-- Report push notification implementation before Firebase connect (no code changes, no secret requests)
+- [x] Cloudflare fixes: Parents panel, importer prepare, student records list, parent photo upload
+- [x] Teacher Parents panel
+- [x] Parent nav: Home + Account only; child profile Overview only
+- [x] Unread dot fix + test
+- [ ] Logins created/changed on Cloudflare (import save, add teacher/student, parent suspend, GR login) — needs a decision: Lovable hosting or a backend function
+- [ ] Closed-app push — blocked on Firebase setup + live test
