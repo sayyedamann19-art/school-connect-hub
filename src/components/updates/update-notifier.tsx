@@ -3,11 +3,12 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { useNotifyPref, useParentUpdates } from "@/hooks/use-parent-updates";
+import { useStaffUpdates } from "@/hooks/use-staff-updates";
 import { normalizeCategory } from "@/lib/updates.functions";
 
-const SHOWN_KEY = "dawn-breakers:update-toasts-shown";
+const PARENT_KEY = "dawn-breakers:update-toasts-shown";
 
-function loadShown(): Set<string> {
+function loadShown(SHOWN_KEY: string): Set<string> {
   try {
     return new Set(JSON.parse(window.localStorage.getItem(SHOWN_KEY) ?? "[]") as string[]);
   } catch {
@@ -15,7 +16,7 @@ function loadShown(): Set<string> {
   }
 }
 
-function saveShown(ids: Set<string>) {
+function saveShown(SHOWN_KEY: string, ids: Set<string>) {
   window.localStorage.setItem(SHOWN_KEY, JSON.stringify(Array.from(ids).slice(-300)));
 }
 
@@ -23,15 +24,18 @@ function saveShown(ids: Set<string>) {
  * Shows a pop-up for each newly published update the parent hasn't read yet.
  * Each update is announced at most once per device (edits and re-publishing keep the same id).
  */
-export function UpdateNotifier() {
+export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) {
   const navigate = useNavigate();
   const pref = useNotifyPref();
-  const { unread, updates } = useParentUpdates();
+  const parentData = useParentUpdates(!staff);
+  const staffData = useStaffUpdates(Boolean(staff));
+  const { unread, updates } = staff ? staffData : parentData;
+  const SHOWN_KEY = staff ? `dawn-breakers:staff-toasts-shown:${staff}` : PARENT_KEY;
   const baselined = useRef(false);
 
   useEffect(() => {
     if (!updates.isSuccess || !pref.isSuccess) return;
-    const shown = loadShown();
+    const shown = loadShown(SHOWN_KEY);
 
     // First load on this device: only announce updates from the last 3 days, not the whole history.
     if (!baselined.current && shown.size === 0) {
@@ -45,19 +49,24 @@ export function UpdateNotifier() {
 
     const fresh = unread.filter((u) => !shown.has(u.id));
     if (fresh.length === 0) {
-      saveShown(shown);
+      saveShown(SHOWN_KEY, shown);
       return;
     }
     fresh.forEach((u) => shown.add(u.id));
-    saveShown(shown);
+    saveShown(SHOWN_KEY, shown);
     if (!pref.data.notifyUpdates) return;
 
-    const open = () => void navigate({ to: "/parent/notifications" });
+    const open = () =>
+      void navigate({ to: staff ? `/${staff}/updates` : "/parent/notifications" } as never);
     const show = fresh.slice(0, 3);
     for (const u of show) {
       const label = normalizeCategory(u.category) === "holiday" ? "Holiday" : "Notice";
       toast(`${label}: ${u.title}`, {
-        description: u.body.length > 90 ? `${u.body.slice(0, 90)}…` : u.body,
+        description: staff
+          ? `From ${u.sender_name}`
+          : u.body.length > 90
+            ? `${u.body.slice(0, 90)}…`
+            : u.body,
         duration: 10_000,
         action: { label: "Open", onClick: open },
       });
@@ -82,7 +91,7 @@ export function UpdateNotifier() {
         action: { label: "View all", onClick: open },
       });
     }
-  }, [unread, updates.isSuccess, updates.data, pref.isSuccess, pref.data, navigate]);
+  }, [unread, updates.isSuccess, updates.data, pref.isSuccess, pref.data, navigate, staff, SHOWN_KEY]);
 
   return null;
 }
