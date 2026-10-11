@@ -1,23 +1,18 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, type FirebaseOptions } from "firebase/app";
 import { getMessaging, getToken, isSupported } from "firebase/messaging";
 
-const appId = import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_APP_ID as
+const appId = import.meta.env["VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_APP_ID"] as
   | string
   | undefined;
-const vapidKey = import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_VAPID_KEY as
+const vapidKey = import.meta.env["VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_VAPID_KEY"] as
   | string
   | undefined;
-
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_WEB_API_KEY as
-    | string
-    | undefined,
-  projectId: import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_PROJECT_ID as
-    | string
-    | undefined,
-  appId,
-  messagingSenderId: appId?.split(":")[1] ?? "",
-};
+const apiKey = import.meta.env["VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_WEB_API_KEY"] as
+  | string
+  | undefined;
+const projectId = import.meta.env["VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_PROJECT_ID"] as
+  | string
+  | undefined;
 
 export type PushResult =
   | { status: "registered"; token: string }
@@ -28,13 +23,8 @@ export type PushResult =
  * click handler — browsers ignore permission requests without a user gesture.
  */
 export async function enablePush(): Promise<PushResult> {
-  if (
-    !firebaseConfig.apiKey ||
-    !firebaseConfig.projectId ||
-    !appId ||
-    !vapidKey ||
-    !firebaseConfig.messagingSenderId
-  ) {
+  const messagingSenderId = appId?.split(":")[1] ?? "";
+  if (!apiKey || !projectId || !appId || !vapidKey || !messagingSenderId) {
     return { status: "not-configured" };
   }
   if (typeof window === "undefined" || !("Notification" in window) || !(await isSupported())) {
@@ -50,12 +40,13 @@ export async function enablePush(): Promise<PushResult> {
     return { status: "denied" };
   }
 
-  const query = new URLSearchParams(
-    Object.fromEntries(Object.entries(firebaseConfig).filter(([, v]) => Boolean(v))) as Record<
-      string,
-      string
-    >,
-  ).toString();
+  const firebaseConfig: FirebaseOptions = { apiKey, projectId, appId, messagingSenderId };
+  const query = new URLSearchParams({
+    apiKey,
+    projectId,
+    appId,
+    messagingSenderId,
+  }).toString();
   const serviceWorkerRegistration = await navigator.serviceWorker.register(
     `/firebase-messaging-sw.js?${query}`,
   );
