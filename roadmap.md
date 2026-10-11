@@ -3,4 +3,5 @@
 - [x] Parent nav: Home + Account only; child profile Overview only
 - [x] Unread dot fix + test
 - [x] Logins created/changed on Cloudflare via account service (needs Lovable re-publish to go live)
+- [x] Manage Class import (admin + teacher), Class 1–10, account-service address fix — needs re-publish + live test
 - [ ] Closed-app push — blocked on Firebase setup + live test
