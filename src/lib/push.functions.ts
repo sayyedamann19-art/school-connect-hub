@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { readServiceAccount, sendToTopic, setTopicMembership } from "@/lib/fcm.server";
+const loadFcm = () => import("@/lib/fcm.server");
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
 const tokenInput = z.object({ token: z.string().min(10).max(4096) });
@@ -28,6 +28,7 @@ export const registerPushToken = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
 
+    const { readServiceAccount, setTopicMembership } = await loadFcm();
     const sa = readServiceAccount();
     if (sa) {
       const [{ data: isParent }, { data: profile }] = await Promise.all([
@@ -53,6 +54,7 @@ export const unregisterPushToken = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .select("token");
     if (error) throw new Error(error.message);
+    const { readServiceAccount, setTopicMembership } = await loadFcm();
     const sa = readServiceAccount();
     if (sa && rows && rows.length > 0) {
       await setTopicMembership(sa, [data.token], false).catch((e) => console.error(e));
@@ -62,6 +64,7 @@ export const unregisterPushToken = createServerFn({ method: "POST" })
 
 /** Joins or leaves the updates topic for all of the signed-in user's own devices. */
 export async function syncOwnTopicMembership(supabase: Supa, userId: string, subscribe: boolean) {
+  const { readServiceAccount, setTopicMembership } = await loadFcm();
   const sa = readServiceAccount();
   if (!sa) return;
   try {
@@ -88,6 +91,7 @@ export async function sendUpdatePushNotifications(supabase: Supa, updateId: stri
     if (error || !row) return;
     const title = `${row.category === "holiday" ? "Holiday" : "Notice"}: ${row.title}`;
 
+    const { readServiceAccount, sendToTopic } = await loadFcm();
     const sa = readServiceAccount();
     if (sa) {
       await sendToTopic(sa, { title, body: row.body, updateId: row.id });
