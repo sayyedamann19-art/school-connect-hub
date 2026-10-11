@@ -14,7 +14,7 @@ export function AttendanceRing({
   className?: string;
 }) {
   const t = useT();
-  const radius = size / 2 - 9;
+const radius = size / 2 - 9;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(Math.max(percent, 0), 100) / 100);
   const stroke =
