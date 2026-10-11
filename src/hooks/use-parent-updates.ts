@@ -6,6 +6,7 @@ import {
   listReadUpdateIds,
   markUpdatesRead,
 } from "@/lib/updates.functions";
+import { computeUnread } from "@/lib/unread";
 
 export const parentUpdatesKey = ["parent", "updates"] as const;
 export const parentReadsKey = ["parent", "update-reads"] as const;
@@ -32,7 +33,7 @@ export function useParentUpdates(enabled = true) {
   // opened. Shown only once both lists have loaded, so a failed load never shows a stale dot.
   const unread =
     reads.isSuccess && updates.isSuccess
-      ? updates.data.filter((u) => u.is_published && !readSet.has(u.id))
+      ? computeUnread(updates.data, readSet)
       : [];
   return { updates, reads, readSet, unread };
 }
