@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { gateUrl, schoolMotto, schoolName } from "@/lib/brand";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { parentSignIn } from "@/lib/parent-auth.functions";
 
@@ -92,14 +91,6 @@ function LoginPage() {
     toast.success("Signed in");
   }
 
-  async function handleGoogleSignIn() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Google sign-in failed", { description: result.error.message });
-    }
-  }
 
   function handleForgotPassword() {
     toast.info("Password help", {
@@ -239,20 +230,6 @@ function LoginPage() {
                     Forgot password?
                   </button>
                 </form>
-
-                <div className="my-5 flex items-center gap-3 text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
-                  <span className="h-px flex-1 bg-border" />
-                  or
-                  <span className="h-px flex-1 bg-border" />
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="h-12 w-full rounded-xl text-sm font-semibold"
-                  onClick={() => void handleGoogleSignIn()}
-                >
-                  Continue with Google
-                </Button>
               </TabsContent>
             </Tabs>
           </div>
