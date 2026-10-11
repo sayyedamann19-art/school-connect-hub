@@ -173,6 +173,13 @@ function TeacherArea() {
                 {assignment.is_class_teacher ? (
                   <StatusBadge tone="primary">Class teacher</StatusBadge>
                 ) : null}
+                {assignment.class ? (
+                  <Button asChild size="sm" variant="outline" className="ml-auto">
+                    <Link to="/teacher/manage-class/$classId" params={{ classId: assignment.class.id }}>
+                      Manage class
+                    </Link>
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>

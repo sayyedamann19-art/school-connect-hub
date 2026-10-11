@@ -38,8 +38,10 @@ import { Route as AuthenticatedTeacherImportRouteImport } from './routes/_authen
 import { Route as AuthenticatedTeacherParentsRouteImport } from './routes/_authenticated/teacher/parents'
 import { Route as AuthenticatedTeacherUpdatesRouteImport } from './routes/_authenticated/teacher/updates'
 import { Route as ApiPublicAccountAdminRouteImport } from './routes/api/public/account-admin'
+import { Route as AuthenticatedAdminManageClassClassIdRouteImport } from './routes/_authenticated/admin/manage-class.$classId'
 import { Route as AuthenticatedParentAcademicsIndexRouteImport } from './routes/_authenticated/parent/academics.index'
 import { Route as AuthenticatedParentStudentStudentIdRouteImport } from './routes/_authenticated/parent/student/$studentId'
+import { Route as AuthenticatedTeacherManageClassClassIdRouteImport } from './routes/_authenticated/teacher/manage-class.$classId'
 import { Route as AuthenticatedParentAcademicsStudentIdExamIdRouteImport } from './routes/_authenticated/parent/academics.$studentId.$examId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -209,6 +211,12 @@ const ApiPublicAccountAdminRoute = ApiPublicAccountAdminRouteImport.update({
   path: '/api/public/account-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminManageClassClassIdRoute =
+  AuthenticatedAdminManageClassClassIdRouteImport.update({
+    id: '/admin/manage-class/$classId',
+    path: '/admin/manage-class/$classId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedParentAcademicsIndexRoute =
   AuthenticatedParentAcademicsIndexRouteImport.update({
     id: '/parent/academics/',
@@ -219,6 +227,12 @@ const AuthenticatedParentStudentStudentIdRoute =
   AuthenticatedParentStudentStudentIdRouteImport.update({
     id: '/parent/student/$studentId',
     path: '/parent/student/$studentId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTeacherManageClassClassIdRoute =
+  AuthenticatedTeacherManageClassClassIdRouteImport.update({
+    id: '/teacher/manage-class/$classId',
+    path: '/teacher/manage-class/$classId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedParentAcademicsStudentIdExamIdRoute =
@@ -257,7 +271,9 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/parent/': typeof AuthenticatedParentIndexRoute
   '/teacher/': typeof AuthenticatedTeacherIndexRoute
+  '/admin/manage-class/$classId': typeof AuthenticatedAdminManageClassClassIdRoute
   '/parent/student/$studentId': typeof AuthenticatedParentStudentStudentIdRoute
+  '/teacher/manage-class/$classId': typeof AuthenticatedTeacherManageClassClassIdRoute
   '/parent/academics/': typeof AuthenticatedParentAcademicsIndexRoute
   '/parent/academics/$studentId/$examId': typeof AuthenticatedParentAcademicsStudentIdExamIdRoute
 }
@@ -290,7 +306,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/parent': typeof AuthenticatedParentIndexRoute
   '/teacher': typeof AuthenticatedTeacherIndexRoute
+  '/admin/manage-class/$classId': typeof AuthenticatedAdminManageClassClassIdRoute
   '/parent/student/$studentId': typeof AuthenticatedParentStudentStudentIdRoute
+  '/teacher/manage-class/$classId': typeof AuthenticatedTeacherManageClassClassIdRoute
   '/parent/academics': typeof AuthenticatedParentAcademicsIndexRoute
   '/parent/academics/$studentId/$examId': typeof AuthenticatedParentAcademicsStudentIdExamIdRoute
 }
@@ -325,7 +343,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/parent/': typeof AuthenticatedParentIndexRoute
   '/_authenticated/teacher/': typeof AuthenticatedTeacherIndexRoute
+  '/_authenticated/admin/manage-class/$classId': typeof AuthenticatedAdminManageClassClassIdRoute
   '/_authenticated/parent/student/$studentId': typeof AuthenticatedParentStudentStudentIdRoute
+  '/_authenticated/teacher/manage-class/$classId': typeof AuthenticatedTeacherManageClassClassIdRoute
   '/_authenticated/parent/academics/': typeof AuthenticatedParentAcademicsIndexRoute
   '/_authenticated/parent/academics/$studentId/$examId': typeof AuthenticatedParentAcademicsStudentIdExamIdRoute
 }
@@ -360,7 +380,9 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/parent/'
     | '/teacher/'
+    | '/admin/manage-class/$classId'
     | '/parent/student/$studentId'
+    | '/teacher/manage-class/$classId'
     | '/parent/academics/'
     | '/parent/academics/$studentId/$examId'
   fileRoutesByTo: FileRoutesByTo
@@ -393,7 +415,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/parent'
     | '/teacher'
+    | '/admin/manage-class/$classId'
     | '/parent/student/$studentId'
+    | '/teacher/manage-class/$classId'
     | '/parent/academics'
     | '/parent/academics/$studentId/$examId'
   id:
@@ -427,7 +451,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/parent/'
     | '/_authenticated/teacher/'
+    | '/_authenticated/admin/manage-class/$classId'
     | '/_authenticated/parent/student/$studentId'
+    | '/_authenticated/teacher/manage-class/$classId'
     | '/_authenticated/parent/academics/'
     | '/_authenticated/parent/academics/$studentId/$examId'
   fileRoutesById: FileRoutesById
@@ -643,6 +669,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAccountAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/manage-class/$classId': {
+      id: '/_authenticated/admin/manage-class/$classId'
+      path: '/admin/manage-class/$classId'
+      fullPath: '/admin/manage-class/$classId'
+      preLoaderRoute: typeof AuthenticatedAdminManageClassClassIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/parent/academics/': {
       id: '/_authenticated/parent/academics/'
       path: '/parent/academics'
@@ -655,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/parent/student/$studentId'
       fullPath: '/parent/student/$studentId'
       preLoaderRoute: typeof AuthenticatedParentStudentStudentIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/teacher/manage-class/$classId': {
+      id: '/_authenticated/teacher/manage-class/$classId'
+      path: '/teacher/manage-class/$classId'
+      fullPath: '/teacher/manage-class/$classId'
+      preLoaderRoute: typeof AuthenticatedTeacherManageClassClassIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/parent/academics/$studentId/$examId': {
@@ -694,7 +734,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedParentIndexRoute: typeof AuthenticatedParentIndexRoute
   AuthenticatedTeacherIndexRoute: typeof AuthenticatedTeacherIndexRoute
+  AuthenticatedAdminManageClassClassIdRoute: typeof AuthenticatedAdminManageClassClassIdRoute
   AuthenticatedParentStudentStudentIdRoute: typeof AuthenticatedParentStudentStudentIdRoute
+  AuthenticatedTeacherManageClassClassIdRoute: typeof AuthenticatedTeacherManageClassClassIdRoute
   AuthenticatedParentAcademicsIndexRoute: typeof AuthenticatedParentAcademicsIndexRoute
   AuthenticatedParentAcademicsStudentIdExamIdRoute: typeof AuthenticatedParentAcademicsStudentIdExamIdRoute
 }
@@ -726,8 +768,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedParentIndexRoute: AuthenticatedParentIndexRoute,
   AuthenticatedTeacherIndexRoute: AuthenticatedTeacherIndexRoute,
+  AuthenticatedAdminManageClassClassIdRoute:
+    AuthenticatedAdminManageClassClassIdRoute,
   AuthenticatedParentStudentStudentIdRoute:
     AuthenticatedParentStudentStudentIdRoute,
+  AuthenticatedTeacherManageClassClassIdRoute:
+    AuthenticatedTeacherManageClassClassIdRoute,
   AuthenticatedParentAcademicsIndexRoute:
     AuthenticatedParentAcademicsIndexRoute,
   AuthenticatedParentAcademicsStudentIdExamIdRoute:
