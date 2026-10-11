@@ -119,3 +119,100 @@ export const adminDeleteUpdate = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ---------- Teacher: create and manage only their own updates (RLS enforces ownership) ---------- */
+
+async function assertTeacher(supabase: unknown, userId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any).rpc("has_role", { _user_id: userId, _role: "teacher" });
+  if (!data) throw new Error("Only teachers can do this");
+}
+
+function requireChanged(rows: unknown[] | null) {
+  if (!rows || rows.length === 0) throw new Error("You can only change updates you wrote");
+}
+
+export const teacherListUpdates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<SchoolUpdate[]> => {
+    await assertTeacher(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("school_updates")
+      .select("id, title, body, category, is_published, published_at, created_at")
+      .eq("created_by", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as SchoolUpdate[];
+  });
+
+export const teacherCreateUpdate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => updateInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeacher(context.supabase, context.userId);
+    const publish = data.isPublished ?? false;
+    const { error } = await context.supabase.from("school_updates").insert({
+      title: data.title,
+      body: data.body,
+      category: data.category,
+      is_published: publish,
+      published_at: publish ? new Date().toISOString() : null,
+      created_by: context.userId,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const teacherUpdateUpdate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => updateInput.extend({ updateId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeacher(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("school_updates")
+      .update({ title: data.title, body: data.body, category: data.category })
+      .eq("id", data.updateId)
+      .eq("created_by", context.userId)
+      .select("id");
+    if (error) throw new Error(error.message);
+    requireChanged(rows);
+    return { ok: true };
+  });
+
+export const teacherSetUpdatePublished = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ updateId: z.string().uuid(), isPublished: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertTeacher(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("school_updates")
+      .update({
+        is_published: data.isPublished,
+        published_at: data.isPublished ? new Date().toISOString() : null,
+      })
+      .eq("id", data.updateId)
+      .eq("created_by", context.userId)
+      .select("id");
+    if (error) throw new Error(error.message);
+    requireChanged(rows);
+    return { ok: true };
+  });
+
+export const teacherDeleteUpdate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ updateId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeacher(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("school_updates")
+      .delete()
+      .eq("id", data.updateId)
+      .eq("created_by", context.userId)
+      .select("id");
+    if (error) throw new Error(error.message);
+    requireChanged(rows);
+    return { ok: true };
+  });
