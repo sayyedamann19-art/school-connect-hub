@@ -15,3 +15,4 @@
 - Resolve shared school branding asset pointers against the project's Lovable asset-serving origin in `src/lib/brand.ts` — external hosts do not serve the root-relative `/__l5e/assets-v1/` endpoint.
 - Self-hosted Cloudflare deploys get the public backend URL and publishable key at runtime from `vars` in root `wrangler.jsonc` (merged into the generated wrangler.json) — server functions read process.env, which Cloudflare otherwise leaves empty; never put private secrets there.
 - Server entry (src/server.ts) fills missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY from Cloudflare bindings or the build-time VITE_ public values — external hosts may not inject them, and server functions read process.env; never fall back to private secrets.
+- Updates: one shared school_updates table and UpdatesManager UI for admin and teacher; teachers manage only rows they authored (RLS on created_by) — avoids a duplicate updates system and keeps admin-only control over others' notices.
