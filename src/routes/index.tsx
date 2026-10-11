@@ -51,20 +51,17 @@ function LoginPage() {
     event.preventDefault();
     setSubmitting(true);
     // Generic failure messaging so the form can't be used to discover GR numbers.
-    const failed = () =>
-      toast.error("Couldn't sign in", {
-        description: "Check the GR number and phone number, or contact the school office.",
-      });
+    const failed = (description = "GR number or password is incorrect") =>
+      toast.error("Couldn't sign in", { description });
     try {
-      const { email: alias } = await resolveParentLogin({ data: { loginId: grNumber.trim() } });
-      if (!alias) {
-        failed();
+      const result = await parentSignIn({
+        data: { grNumber: grNumber.trim(), password: parentPassword },
+      });
+      if (!result.ok) {
+        failed(result.error);
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({
-        email: alias,
-        password: parentPassword,
-      });
+      const { error } = await supabase.auth.setSession(result.session);
       if (error) {
         failed();
         return;
