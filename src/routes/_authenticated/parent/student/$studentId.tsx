@@ -94,7 +94,7 @@ function StudentProfile() {
           photoUrl={photoUrl}
         />
         <div className="min-w-0 flex-1">
-          <PageHeader title={student.full_name} description={classLabel(t, student.class)} />
+          <PageHeader title={student.full_name} description={(student.class ? classLabel(student.class) : t("Class not assigned"))} />
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge tone="primary">{t("GR number")}: {student.gr_number}</StatusBadge>
             {student.roll_number ? (
@@ -128,7 +128,7 @@ function StudentProfile() {
           items={[
             { label: t("Full name"), value: student.full_name },
             { label: t("GR number"), value: student.gr_number },
-            { label: t("Class / division"), value: classLabel(t, student.class) },
+            { label: t("Class / division"), value: (student.class ? classLabel(student.class) : t("Class not assigned")) },
             { label: t("Roll number"), value: student.roll_number ?? "—" },
             { label: t("Date of birth"), value: formatDate(lang, student.date_of_birth) },
             { label: t("Academic year"), value: student.class?.academic_year ?? "—" },
