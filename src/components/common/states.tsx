@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logoUrl, schoolName } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 export function EmptyState({
@@ -21,7 +22,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-6 py-12 text-center",
+        "fade-in-up flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-6 py-12 text-center",
         className,
       )}
     >
@@ -51,7 +52,7 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-danger/20 bg-danger-soft px-6 py-10 text-center",
+        "fade-in-up flex flex-col items-center justify-center rounded-xl border border-danger/20 bg-danger-soft px-6 py-10 text-center",
         className,
       )}
     >
@@ -70,7 +71,7 @@ export function ErrorState({
 
 export function LoadingCards({ count = 3, className }: { count?: number; className?: string }) {
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-3", className)}>
+    <div role="status" aria-label="Loading" className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-3", className)}>
       {Array.from({ length: count }).map((_, index) => (
         <div key={index} className="card-surface p-5">
           <div className="flex items-center gap-3">
@@ -90,10 +91,21 @@ export function LoadingCards({ count = 3, className }: { count?: number; classNa
 
 export function LoadingRows({ count = 5 }: { count?: number }) {
   return (
-    <div className="space-y-2">
+    <div role="status" aria-label="Loading" className="space-y-2">
       {Array.from({ length: count }).map((_, index) => (
         <Skeleton key={index} className="h-11 w-full rounded-lg" />
       ))}
+    </div>
+  );
+}
+
+/** Branded full-screen loader, used only while the sign-in session is being restored. */
+export function BrandedLoadingScreen({ label = "Loading your school portal…" }: { label?: string }) {
+  return (
+    <div role="status" aria-live="polite" className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background px-6">
+      <img src={logoUrl} alt={schoolName} width={80} height={80} className="logo-fade size-20 rounded-full object-cover shadow-sm" />
+      <div className="loading-bar h-1 w-32 overflow-hidden rounded-full bg-muted" aria-hidden />
+      <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
 }
