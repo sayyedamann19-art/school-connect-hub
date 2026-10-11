@@ -11,10 +11,30 @@ export function normalizeCategory(value: string | null | undefined): UpdateCateg
   return value === "holiday" ? "holiday" : "notice";
 }
 
-function normalizeRows(rows: unknown[] | null): SchoolUpdate[] {
-  return ((rows ?? []) as SchoolUpdate[]).map((row) => ({
+type RawRow = Omit<SchoolUpdate, "sender_name" | "can_manage"> & { created_by?: string | null };
+
+/** Adds the sender label (Admin or teacher name) and whether the caller may manage the row. */
+async function decorate(
+  supabase: unknown,
+  rows: unknown[] | null,
+  manage: { userId: string; isAdmin: boolean } | null,
+): Promise<SchoolUpdate[]> {
+  const list = (rows ?? []) as RawRow[];
+  const senders = new Map<string, string>();
+  if (list.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("get_update_senders", {
+      _update_ids: list.map((r) => r.id),
+    });
+    for (const s of (data ?? []) as { update_id: string; sender_name: string }[]) {
+      senders.set(s.update_id, s.sender_name);
+    }
+  }
+  return list.map(({ created_by, ...row }) => ({
     ...row,
     category: normalizeCategory(row.category),
+    sender_name: senders.get(row.id) ?? "School",
+    can_manage: manage ? manage.isAdmin || created_by === manage.userId : false,
   }));
 }
 
@@ -27,6 +47,9 @@ export type SchoolUpdate = {
   first_published_at?: string | null;
   published_at: string | null;
   created_at: string;
+  sender_name: string;
+  /** True when the current user may edit, publish or delete this update. */
+  can_manage: boolean;
 };
 
 const updateInput = z.object({
@@ -48,13 +71,13 @@ export const listPublishedUpdates = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("school_updates")
       .select(
-        "id, title, body, category, is_published, published_at, first_published_at, created_at",
+        "id, title, body, category, is_published, published_at, first_published_at, created_at, created_by",
       )
       .eq("is_published", true)
       .order("first_published_at", { ascending: false, nullsFirst: false })
       .limit(100);
     if (error) throw new Error(error.message);
-    return normalizeRows(data);
+    return decorate(context.supabase, data, null);
   });
 
 /** Every update, drafts included. Admin only (RLS also restricts drafts). */
@@ -65,11 +88,11 @@ export const adminListUpdates = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase as any);
     const { data, error } = await context.supabase
       .from("school_updates")
-      .select("id, title, body, category, is_published, published_at, created_at")
+      .select("id, title, body, category, is_published, published_at, created_at, created_by")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return normalizeRows(data);
+    return decorate(context.supabase, data, { userId: context.userId, isAdmin: true });
   });
 
 export const adminCreateUpdate = createServerFn({ method: "POST" })
@@ -168,12 +191,13 @@ export const teacherListUpdates = createServerFn({ method: "GET" })
     await assertTeacher(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("school_updates")
-      .select("id, title, body, category, is_published, published_at, created_at")
-      .eq("created_by", context.userId)
+      .select("id, title, body, category, is_published, published_at, created_at, created_by")
+      // Own updates (drafts included) plus every published update, e.g. from admins.
+      .or(`created_by.eq.${context.userId},is_published.eq.true`)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return normalizeRows(data);
+    return decorate(context.supabase, data, { userId: context.userId, isAdmin: false });
   });
 
 export const teacherCreateUpdate = createServerFn({ method: "POST" })
