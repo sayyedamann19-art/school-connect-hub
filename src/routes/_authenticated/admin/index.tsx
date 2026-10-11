@@ -41,7 +41,13 @@ function todayIso() {
 
 function AdminArea() {
   const today = todayIso();
-  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: () => getAdminOverview() });
+  const overview = useQuery({
+    queryKey: ["admin", "overview"],
+    queryFn: () => getAdminOverview(),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
   const parents = useQuery({
     queryKey: ["admin", "parents", ""],
     queryFn: () => adminListParents({ data: {} }),

@@ -259,19 +259,24 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     if (roleError) throw new Error(roleError.message);
     if (!isAdmin) throw new Error("Forbidden");
 
-    const count = async (table: "students" | "classes" | "teachers" | "parent_students") => {
-      const { count: rows, error } = await supabase
-        .from(table)
-        .select("id", { count: "exact", head: true });
-      if (error) throw new Error(error.message);
-      return rows ?? 0;
+    const done = (res: { count: number | null; error: { message: string } | null }) => {
+      if (res.error) throw new Error(res.error.message);
+      return res.count ?? 0;
     };
+    // Counting rules match the list pages: deleted teachers are excluded (soft delete),
+    // students count only those currently studying.
+    const [students, classes, teachers, parentLinks] = await Promise.all([
+      supabase.from("students").select("id", { count: "exact", head: true }).eq("is_active", true),
+      supabase.from("classes").select("id", { count: "exact", head: true }),
+      supabase.from("teachers").select("id", { count: "exact", head: true }).is("deleted_at", null),
+      supabase.from("parent_students").select("id", { count: "exact", head: true }),
+    ]);
 
     return {
-      students: await count("students"),
-      classes: await count("classes"),
-      teachers: await count("teachers"),
-      parentLinks: await count("parent_students"),
+      students: done(students),
+      classes: done(classes),
+      teachers: done(teachers),
+      parentLinks: done(parentLinks),
     };
   });
 

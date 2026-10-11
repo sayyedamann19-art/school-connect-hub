@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { greetingFor } from "@/lib/greeting";
 
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing } from "@/components/parent/progress-visuals";
@@ -46,6 +47,11 @@ function formatDate(value: string) {
 }
 
 function ParentHome() {
+  const [greeting, setGreeting] = useState(() => greetingFor());
+  useEffect(() => {
+    const id = window.setInterval(() => setGreeting(greetingFor()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["parent", "children"],
@@ -88,7 +94,7 @@ function ParentHome() {
     <div className="space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0">
-          <p className="eyebrow">Good morning</p>
+          <p className="eyebrow" suppressHydrationWarning>{greeting}</p>
           <h1 className="page-title mt-1 truncate">{data?.parentName ?? "Parent"}</h1>
         </div>
       </header>
