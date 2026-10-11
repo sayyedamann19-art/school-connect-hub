@@ -60,16 +60,14 @@ export const listManagedStudents = createServerFn({ method: "GET" })
     const parentByStudent = new Map<string, { fullName: string | null; phone: string | null }>();
 
     if (studentIds.length) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: links } = await supabaseAdmin
-        .from("parent_students")
-        .select("student_id, parent:profiles(full_name, phone)")
-        .in("student_id", studentIds);
+      const { data: links } = await context.supabase.rpc("get_student_parent_contacts", {
+        _student_ids: studentIds,
+      });
       for (const link of links ?? []) {
         if (parentByStudent.has(link.student_id)) continue;
         parentByStudent.set(link.student_id, {
-          fullName: link.parent?.full_name ?? null,
-          phone: link.parent?.phone ?? null,
+          fullName: link.full_name ?? null,
+          phone: link.phone ?? null,
         });
       }
     }

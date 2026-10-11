@@ -43,11 +43,9 @@ export const getImportContext = createServerFn({ method: "GET" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { isAdmin, allowedClassKeys } = await loadAuthorisation(context.supabase as any);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students, error } = await supabaseAdmin
-      .from("students")
-      .select("id, full_name, gr_number");
-    if (error) throw new Error(error.message);
+    // Works without the privileged key: a database helper that answers only admins/teachers.
+    const { data: students, error } = await context.supabase.rpc("import_student_lookup");
+    if (error) throw new Error("We couldn't read the current student list. Please try again.");
 
     const existingByGr: ImportContext["existingByGr"] = {};
     for (const student of students ?? []) {
@@ -286,8 +284,8 @@ export const listImportHistory = createServerFn({ method: "GET" })
     const uploaderIds = [...new Set((data ?? []).map((row) => row.uploaded_by).filter(Boolean))] as string[];
     const nameById = new Map<string, string>();
     if (uploaderIds.length) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: profiles } = await supabaseAdmin
+      // Admins can read every profile; teachers only see their own uploads anyway.
+      const { data: profiles } = await context.supabase
         .from("profiles")
         .select("id, full_name")
         .in("id", uploaderIds);

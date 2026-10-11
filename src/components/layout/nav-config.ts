@@ -44,6 +44,7 @@ export type NavPath =
   | "/admin/updates"
   | "/admin/attendance"
   | "/teacher/import"
+  | "/teacher/parents"
   | "/account";
 
 export type NavItem = {
@@ -59,12 +60,6 @@ export type NavItem = {
 export const navByRole: Record<AppRole, NavItem[]> = {
   parent: [
     { label: "Home", to: "/parent", icon: House },
-    { label: "Children", to: "/parent/children", icon: Users },
-    { label: "Attendance", to: "/parent/attendance", icon: CalendarCheck },
-    { label: "Feedback", to: "/parent/feedback", icon: MessageSquareText },
-    { label: "Character", to: "/parent/character", icon: Award },
-    { label: "Academics", to: "/parent/academics", icon: BookOpen },
-    { label: "Updates", to: "/parent/notifications", icon: Bell },
     { label: "Account", to: "/account", icon: UserRound },
   ],
   teacher: [
@@ -74,6 +69,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Character", to: "/teacher/character", icon: Award },
     { label: "Results", to: "/teacher/academics", icon: BookOpen },
     { label: "Updates", to: "/teacher/updates", icon: Bell },
+    { label: "Parents", to: "/teacher/parents", icon: Link2 },
     { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
@@ -93,7 +89,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
 
 /** The phone bottom bar fits five items; the rest stay in the side menu. */
 const bottomNavPaths: Record<AppRole, NavPath[]> = {
-  parent: ["/parent", "/parent/children", "/parent/attendance", "/parent/notifications", "/account"],
+  parent: ["/parent", "/account"],
   teacher: [
     "/teacher",
     "/teacher/attendance",

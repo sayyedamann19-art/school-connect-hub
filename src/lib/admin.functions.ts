@@ -426,33 +426,30 @@ export const adminListParents = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<AdminParent[]> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: roleRows, error: roleError } = await supabaseAdmin
+    // Runs as the signed-in admin; database rules already grant admins these reads.
+    const sb = context.supabase;
+    const { data: roleRows, error: roleError } = await sb
       .from("user_roles")
       .select("user_id")
       .eq("role", "parent");
-    if (roleError) throw new Error(roleError.message);
+    if (roleError) throw new Error("We couldn't load parent accounts. Please try again.");
 
     const parentIds = [...new Set((roleRows ?? []).map((row) => row.user_id))];
     if (parentIds.length === 0) return [];
 
-    const [{ data: profiles }, { data: links }, authList] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id, full_name, phone, login_alias").in("id", parentIds),
-      supabaseAdmin
+    const [{ data: profiles }, { data: links }, statusResult] = await Promise.all([
+      sb.from("profiles").select("id, full_name, phone, login_alias").in("id", parentIds),
+      sb
         .from("parent_students")
         .select(
           "id, parent_id, relationship, student:students(id, full_name, gr_number, roll_number, is_active, class:classes(name, division))",
         )
         .in("parent_id", parentIds),
-      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+      sb.rpc("admin_parent_account_status", { _ids: parentIds }),
     ]);
 
     const bannedById = new Map<string, boolean>();
-    for (const user of authList.data?.users ?? []) {
-      const banned = (user as { banned_until?: string | null }).banned_until;
-      bannedById.set(user.id, Boolean(banned && new Date(banned) > new Date()));
-    }
+    for (const row of statusResult.data ?? []) bannedById.set(row.user_id, row.is_suspended);
 
     const term = data.search?.toLowerCase() ?? "";
 

@@ -9,7 +9,6 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { classLabel } from "@/components/common/student-card";
 import { RoleGate } from "@/components/layout/role-gate";
 import { StudentPhotoEditor } from "@/components/parent/student-photo-editor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStudentOverview } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/student/$studentId")({
@@ -121,68 +120,27 @@ function StudentProfile() {
         <StatCard label="Teacher notes" value={summary.noteCount} icon={NotebookPen} />
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="notes">Teacher notes</TabsTrigger>
-          <TabsTrigger value="character">Character card</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4">
-          <SectionCard title="Student details">
-            <DefinitionList
-              items={[
-                { label: "Full name", value: student.full_name },
-                { label: "GR number", value: student.gr_number },
-                { label: "Class / division", value: classLabel(student.class) },
-                { label: "Roll number", value: student.roll_number ?? "—" },
-                { label: "Date of birth", value: formatDate(student.date_of_birth) },
-                { label: "Academic year", value: student.class?.academic_year ?? "—" },
-                {
-                  label: "Height",
-                  value: student.height_cm === null ? "—" : `${student.height_cm} cm`,
-                },
-                {
-                  label: "Weight",
-                  value: student.weight_kg === null ? "—" : `${student.weight_kg} kg`,
-                },
-                { label: "Photo", value: student.photo_path ? "On file" : "Not uploaded" },
-              ]}
-            />
-          </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="attendance" className="mt-4">
-          <SectionCard title="Attendance" description="Daily records, monthly and yearly trends.">
-            <EmptyState
-              title="Attendance module coming next"
-              description="Present, absent, late, left early and other markings with monthly and yearly percentages will appear here."
-            />
-          </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="notes" className="mt-4">
-          <SectionCard title="Teacher notes" description="Notes shared by teachers for this child.">
-            <EmptyState
-              title="Teacher notes module coming next"
-              description="Each note will show the teacher, date, subject or class, and the note itself."
-            />
-          </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="character" className="mt-4">
-          <SectionCard
-            title="Character card"
-            description="Positive and negative points with full history."
-          >
-            <EmptyState
-              title="Character card module coming next"
-              description="Current score, point history, reasons, awarding teacher and dates will appear here."
-            />
-          </SectionCard>
-        </TabsContent>
-      </Tabs>
+      <SectionCard title="Student details">
+        <DefinitionList
+          items={[
+            { label: "Full name", value: student.full_name },
+            { label: "GR number", value: student.gr_number },
+            { label: "Class / division", value: classLabel(student.class) },
+            { label: "Roll number", value: student.roll_number ?? "—" },
+            { label: "Date of birth", value: formatDate(student.date_of_birth) },
+            { label: "Academic year", value: student.class?.academic_year ?? "—" },
+            {
+              label: "Height",
+              value: student.height_cm === null ? "—" : `${student.height_cm} cm`,
+            },
+            {
+              label: "Weight",
+              value: student.weight_kg === null ? "—" : `${student.weight_kg} kg`,
+            },
+            { label: "Photo", value: student.photo_path ? "On file" : "Not uploaded" },
+          ]}
+        />
+      </SectionCard>
     </div>
   );
 }
