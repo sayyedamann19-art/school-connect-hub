@@ -394,6 +394,7 @@ export type Database = {
           full_name: string | null
           id: string
           login_alias: string | null
+          notify_updates: boolean
           phone: string | null
           updated_at: string
         }
@@ -403,6 +404,7 @@ export type Database = {
           full_name?: string | null
           id: string
           login_alias?: string | null
+          notify_updates?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -412,6 +414,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           login_alias?: string | null
+          notify_updates?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -423,6 +426,7 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          first_published_at: string | null
           id: string
           is_published: boolean
           published_at: string | null
@@ -434,6 +438,7 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          first_published_at?: string | null
           id?: string
           is_published?: boolean
           published_at?: string | null
@@ -445,6 +450,7 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          first_published_at?: string | null
           id?: string
           is_published?: boolean
           published_at?: string | null
@@ -680,6 +686,32 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      update_reads: {
+        Row: {
+          read_at: string
+          update_id: string
+          user_id: string
+        }
+        Insert: {
+          read_at?: string
+          update_id: string
+          user_id: string
+        }
+        Update: {
+          read_at?: string
+          update_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "update_reads_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "school_updates"
             referencedColumns: ["id"]
           },
         ]
