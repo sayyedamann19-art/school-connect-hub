@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, GraduationCap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { teacherListUpdates } from "@/lib/updates.functions";
