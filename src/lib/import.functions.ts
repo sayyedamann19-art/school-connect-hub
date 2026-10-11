@@ -1,3 +1,5 @@
+import { getRequest } from "@tanstack/react-start/server";
+import type { ImportRowResult } from "@/lib/account-admin.server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -79,11 +81,8 @@ export const runStudentImport = createServerFn({ method: "POST" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { isAdmin, allowedClassKeys } = await loadAuthorisation(context.supabase as any);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: existingStudents } = await supabaseAdmin
-      .from("students")
-      .select("id, full_name, gr_number");
+    // Duplicate-GR lookup through the same admin/teacher-only helper as the preview.
+    const { data: existingStudents } = await context.supabase.rpc("import_student_lookup");
     const existingByGr: ImportContext["existingByGr"] = {};
     for (const student of existingStudents ?? []) {
       existingByGr[student.gr_number.toLowerCase()] = {
@@ -98,21 +97,6 @@ export const runStudentImport = createServerFn({ method: "POST" })
       allowedClassKeys,
     });
 
-    const { data: classes } = await supabaseAdmin
-      .from("classes")
-      .select("id, name, division, academic_year");
-    const classIdByKey = new Map<string, string>();
-    for (const row of classes ?? []) classIdByKey.set(classKey(row.name, row.division), row.id);
-
-    const { data: parentProfiles } = await supabaseAdmin
-      .from("profiles")
-      .select("id, phone")
-      .not("phone", "is", null);
-    const parentIdByPhone = new Map<string, string>();
-    for (const profile of parentProfiles ?? []) {
-      if (profile.phone) parentIdByPhone.set(profile.phone, profile.id);
-    }
-
     const details: {
       rowNumber: number;
       grNumber: string;
@@ -120,141 +104,59 @@ export const runStudentImport = createServerFn({ method: "POST" })
       outcome: "created" | "updated" | "failed";
       message?: string;
     }[] = [];
-
     let created = 0;
     let updated = 0;
     let failed = 0;
 
+    const toWrite = validated.filter((entry) => entry.action !== "error");
     for (const entry of validated) {
-      const { row } = entry;
-      if (entry.action === "error") {
-        failed += 1;
-        details.push({
-          rowNumber: row.rowNumber,
-          grNumber: row.grNumber,
-          studentName: row.fullName,
-          outcome: "failed",
-          message: entry.errors.join("; "),
-        });
-        continue;
-      }
+      if (entry.action !== "error") continue;
+      failed += 1;
+      details.push({
+        rowNumber: entry.row.rowNumber,
+        grNumber: entry.row.grNumber,
+        studentName: entry.row.fullName,
+        outcome: "failed",
+        message: entry.errors.join("; "),
+      });
+    }
 
+    // Writes (students, parent logins, links) run in the account service, which re-checks
+    // the caller's role and, for teachers, that every row belongs to one of their classes.
+    const { runAccountAction, bearerFrom } = await import("@/lib/account-admin.server");
+    const token = bearerFrom(getRequest());
+    const byRowNumber = new Map(toWrite.map((entry) => [entry.row.rowNumber, entry.row]));
+    for (let i = 0; i < toWrite.length; i += 50) {
+      const batch = toWrite.slice(i, i + 50).map((entry) => entry.row);
+      let results: ImportRowResult[];
       try {
-        // 1. Class (created on demand by admins only)
-        const key = classKey(row.className, row.division);
-        let classId = classIdByKey.get(key);
-        if (!classId) {
-          if (!isAdmin) throw new Error("This class doesn't exist yet — ask an administrator to create it");
-          const { data: newClass, error: classError } = await supabaseAdmin
-            .from("classes")
-            .insert({
-              name: row.className,
-              division: row.division,
-              academic_year: currentAcademicYear(),
-            })
-            .select("id")
-            .single();
-          if (classError) throw new Error(classError.message);
-          classId = newClass.id;
-          classIdByKey.set(key, classId);
-        }
-
-        // 2. Student (create or update by GR number)
-        const existing = existingByGr[row.grNumber.toLowerCase()];
-        const studentPatch = {
-          full_name: row.fullName,
-          gr_number: row.grNumber,
-          roll_number: row.rollNumber,
-          class_id: classId,
-          height_cm: row.heightCm,
-          weight_kg: row.weightKg,
-        };
-
-        let studentId: string;
-        if (existing) {
-          const { error } = await supabaseAdmin
-            .from("students")
-            .update(studentPatch)
-            .eq("id", existing.id);
-          if (error) throw new Error(error.message);
-          studentId = existing.id;
-        } else {
-          const { data: inserted, error } = await supabaseAdmin
-            .from("students")
-            .insert(studentPatch)
-            .select("id")
-            .single();
-          if (error) throw new Error(error.message);
-          studentId = inserted.id;
-          existingByGr[row.grNumber.toLowerCase()] = { id: studentId, fullName: row.fullName };
-        }
-
-        // 3. Parent account, reused across siblings by phone number
-        let parentId = parentIdByPhone.get(row.parentPhone);
-        if (!parentId) {
-          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: parentAlias(row.parentPhone),
-            password: row.parentPhone,
-            email_confirm: true,
-            user_metadata: { full_name: row.parentName },
-          });
-          if (authError || !authUser.user) {
-            throw new Error(authError?.message ?? "Couldn't create the parent account");
-          }
-          parentId = authUser.user.id;
-          parentIdByPhone.set(row.parentPhone, parentId);
-          await supabaseAdmin
-            .from("user_roles")
-            .upsert({ user_id: parentId, role: "parent" }, { onConflict: "user_id,role" });
-        }
-
-        await supabaseAdmin
-          .from("profiles")
-          .upsert(
-            {
-              id: parentId,
-              full_name: row.parentName,
-              phone: row.parentPhone,
-              login_alias: parentAlias(row.parentPhone),
-            },
-            { onConflict: "id" },
-          );
-
-        // 4. Parent -> student link (kept if it already exists)
-        const { data: link } = await supabaseAdmin
-          .from("parent_students")
-          .select("id")
-          .eq("student_id", studentId)
-          .eq("parent_id", parentId)
-          .maybeSingle();
-        if (!link) {
-          const { error: linkError } = await supabaseAdmin
-            .from("parent_students")
-            .insert({ student_id: studentId, parent_id: parentId });
-          if (linkError) throw new Error(linkError.message);
-        }
-
-        if (existing) updated += 1;
-        else created += 1;
-        details.push({
-          rowNumber: row.rowNumber,
-          grNumber: row.grNumber,
-          studentName: row.fullName,
-          outcome: existing ? "updated" : "created",
-        });
+        ({ results } = await runAccountAction<{ results: ImportRowResult[] }>(
+          "import_rows",
+          { academicYear: currentAcademicYear(), rows: batch },
+          { token },
+        ));
       } catch (error) {
-        failed += 1;
+        const message = error instanceof Error ? error.message : "Couldn't save these rows";
+        results = batch.map((row) => ({ rowNumber: row.rowNumber, outcome: "failed", message }));
+      }
+      for (const result of results) {
+        const row = byRowNumber.get(result.rowNumber);
+        if (!row) continue;
+        if (result.outcome === "created") created += 1;
+        else if (result.outcome === "updated") updated += 1;
+        else failed += 1;
         details.push({
           rowNumber: row.rowNumber,
           grNumber: row.grNumber,
           studentName: row.fullName,
-          outcome: "failed",
-          message: error instanceof Error ? error.message : "Unknown error",
+          outcome: result.outcome,
+          ...(result.message ? { message: result.message } : {}),
         });
       }
     }
+    details.sort((x, y) => x.rowNumber - y.rowNumber);
 
-    await supabaseAdmin.from("student_imports").insert({
+    await context.supabase.from("student_imports").insert({
       uploaded_by: userId,
       file_name: data.fileName,
       total_records: validated.length,
