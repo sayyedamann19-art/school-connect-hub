@@ -23,6 +23,7 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth, useSignOut } from "@/hooks/use-auth";
 import { useParentUpdates } from "@/hooks/use-parent-updates";
+import { useStaffUpdates } from "@/hooks/use-staff-updates";
 import { UpdateNotifier } from "@/components/updates/update-notifier";
 import { initials } from "@/components/common/student-card";
 import { schoolMotto } from "@/lib/brand";
@@ -211,7 +212,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { session, primaryRole } = useAuth();
   const isParent = Boolean(session) && primaryRole === "parent";
-  const { unread } = useParentUpdates(isParent);
+  const staffRole =
+    session && (primaryRole === "admin" || primaryRole === "teacher") ? primaryRole : null;
+  const parentUnread = useParentUpdates(isParent).unread;
+  const staffUnread = useStaffUpdates(Boolean(staffRole)).unread;
+  const unread = isParent ? parentUnread : staffUnread;
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
@@ -246,10 +251,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            {primaryRole === "parent" ? (
+            {isParent || staffRole ? (
               <Button variant="ghost" size="icon" className="relative size-10 rounded-full" asChild>
                 <Link
-                  to="/parent/notifications"
+                  to={staffRole ? `/${staffRole}/updates` : "/parent/notifications"}
                   aria-label={unread.length ? `Updates, ${unread.length} unread` : "Updates"}
                 >
                   <Bell className="size-5" strokeWidth={1.75} />
@@ -274,6 +279,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <MobileNavBar />
       {isParent ? <UpdateNotifier /> : null}
+      {staffRole ? <UpdateNotifier key={staffRole} staff={staffRole} /> : null}
     </div>
   );
 }

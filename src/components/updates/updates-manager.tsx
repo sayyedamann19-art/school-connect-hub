@@ -3,6 +3,7 @@ import { Bell, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { StaffInbox } from "@/components/updates/staff-inbox";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: [scope, "updates"] });
     void queryClient.invalidateQueries({ queryKey: ["parent", "updates"] });
+    void queryClient.invalidateQueries({ queryKey: ["staff", "inbox"] });
   };
 
   const publishMutation = useMutation({
@@ -120,6 +122,8 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
           </Button>
         }
       />
+
+      <StaffInbox />
 
       {updatesQuery.isLoading ? (
         <LoadingCards count={3} />
