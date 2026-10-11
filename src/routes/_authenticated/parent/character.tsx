@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Award, Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
-import { useT, useI18n, localeFor } from "@/lib/i18n";
 import { getMyChildren, getStudentCharacterPoints } from "@/lib/school.functions";
 import { cn } from "@/lib/utils";
 
@@ -31,14 +31,10 @@ export const Route = createFileRoute("/_authenticated/parent/character")({
   component: CharacterPage,
 });
 
-function formatDate(value: string, lang: string) {
+function formatDate(lang: string, value: string) {
   const parsed = new Date(`${value}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString(localeFor(lang as any), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return parsed.toLocaleDateString(localeFor(lang as any), { day: "numeric", month: "short", year: "numeric" });
 }
 
 function CharacterPage() {
@@ -77,9 +73,7 @@ function CharacterPage() {
     return (
       <EmptyState
         title={t("No children linked to your account yet")}
-        description={t(
-          "Please contact the school office so your child's record can be linked to this login.",
-        )}
+        description={t("Please contact the school office so your child's record can be linked to this login.")}
       />
     );
   }
@@ -161,7 +155,7 @@ function CharacterPage() {
                   <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{entry.reason}</p>
                 ) : null}
                 <p className="meta-text mt-2">
-                  {entry.teacher_name} · {formatDate(entry.awarded_on, lang)}
+                  {entry.teacher_name} · {formatDate(lang, entry.awarded_on)}
                 </p>
               </div>
             </article>

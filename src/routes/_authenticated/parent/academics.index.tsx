@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getStudentAcademics } from "@/lib/academics.functions";
 import { getMyChildren } from "@/lib/school.functions";
-import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/parent/academics/")({
   head: () => ({
@@ -38,20 +38,9 @@ function AcademicsPage() {
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;
   if (childrenQuery.isError)
-    return (
-      <ErrorState
-        title={t("We couldn't load academics")}
-        description={t("Please try again in a moment.")}
-        onRetry={() => void childrenQuery.refetch()}
-      />
-    );
+    return <ErrorState title={t("We couldn't load academics")} description={t("Please try again in a moment.")} onRetry={() => void childrenQuery.refetch()} />;
   if (!child)
-    return (
-      <EmptyState
-        title={t("No children linked to your account yet")}
-        description={t("Please contact the school office.")}
-      />
-    );
+    return <EmptyState title={t("No children linked to your account yet")} description={t("Please contact the school office.")} />;
 
   const years = academicsQuery.data?.years ?? [];
 
@@ -71,11 +60,7 @@ function AcademicsPage() {
       {academicsQuery.isLoading ? (
         <LoadingCards count={4} />
       ) : academicsQuery.isError ? (
-        <ErrorState
-          title={t("We couldn't load results")}
-          description={t("Please try again in a moment.")}
-          onRetry={() => void academicsQuery.refetch()}
-        />
+        <ErrorState title={t("We couldn't load results")} description={t("Please try again in a moment.")} onRetry={() => void academicsQuery.refetch()} />
       ) : years.length === 0 ? (
         <EmptyState title={t("No exams yet")} icon={<BookOpen className="size-5" strokeWidth={1.75} />} />
       ) : (

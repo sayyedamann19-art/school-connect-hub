@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BellRing, CalendarHeart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { useMarkUpdatesRead, useParentUpdates } from "@/hooks/use-parent-updates";
 import type { UpdateCategory } from "@/lib/updates.functions";
 import { cn } from "@/lib/utils";
-import { useT, useI18n, localeFor, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/parent/notifications")({
   head: () => ({
@@ -27,20 +27,9 @@ export const Route = createFileRoute("/_authenticated/parent/notifications")({
   component: NotificationsPage,
 });
 
-const categoryMeta: Record<UpdateCategory, { icon: LucideIcon; tone: string; label: string }> = {
-  notice: { icon: BellRing, tone: "bg-primary-soft text-primary", label: "Notice" },
-  holiday: { icon: CalendarHeart, tone: "bg-gold-soft text-warning-foreground", label: "Holiday" },
-};
-
-const filters = [
-  { value: "all", label: "All" },
-  { value: "notice", label: "Notice" },
-  { value: "holiday", label: "Holiday" },
-] as const;
-
-function formatWhen(value: string | null, lang: Lang) {
+function formatWhen(lang: string, value: string | null) {
   if (!value) return "";
-  return new Date(value).toLocaleDateString(localeFor(lang), {
+  return new Date(value).toLocaleDateString(localeFor(lang as any), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -53,6 +42,18 @@ function NotificationsPage() {
   const { updates: query, readSet, unread } = useParentUpdates();
   const { data, isLoading, isError, refetch } = query;
   const markRead = useMarkUpdatesRead();
+  
+  const categoryMeta: Record<UpdateCategory, { icon: LucideIcon; tone: string; label: string }> = useMemo(() => ({
+    notice: { icon: BellRing, tone: "bg-primary-soft text-primary", label: t("Notice") },
+    holiday: { icon: CalendarHeart, tone: "bg-gold-soft text-warning-foreground", label: t("Holiday") },
+  }), [t]);
+
+  const filters = useMemo(() => [
+    { value: "all", label: t("All") },
+    { value: "notice", label: t("Notice") },
+    { value: "holiday", label: t("Holiday") },
+  ] as const, [t]);
+
   const [filter, setFilter] = useState<(typeof filters)[number]["value"]>("all");
   // Remember which were unread when the page opened, so the "New" tag stays visible this visit.
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
@@ -89,7 +90,9 @@ function NotificationsPage() {
         <p className="meta-text mt-1.5">
           {all.length === 0
             ? t("No updates published yet")
-            : t("{n} updates from the school", { n: all.length })}
+            : all.length === 1
+              ? t("{n} update from the school", { n: all.length })
+              : t("{n} updates from the school", { n: all.length })}
         </p>
       </header>
 
@@ -109,7 +112,7 @@ function NotificationsPage() {
                   : "border-border bg-surface text-foreground hover:bg-muted",
               )}
             >
-              {t(item.label)}
+              {item.label}
             </button>
           ))}
         </div>
@@ -152,8 +155,8 @@ function NotificationsPage() {
                     {item.body}
                   </p>
                   <p className="meta-text mt-2">
-                    {t(meta.label)} · {t("From {sender}", { sender: item.sender_name })} ·{" "}
-                    {formatWhen(item.first_published_at ?? item.published_at ?? item.created_at, lang)}
+                    {meta.label} · {t("From {name}", { name: item.sender_name })} ·{" "}
+                    {formatWhen(lang, item.first_published_at ?? item.published_at ?? item.created_at)}
                   </p>
                 </div>
               </article>

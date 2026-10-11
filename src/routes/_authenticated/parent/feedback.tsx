@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareText } from "lucide-react";
 import { useState } from "react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
-import { useT, useI18n, localeFor } from "@/lib/i18n";
 import { getMyChildren, getStudentNotes } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/feedback")({
@@ -27,14 +27,10 @@ export const Route = createFileRoute("/_authenticated/parent/feedback")({
   component: FeedbackPage,
 });
 
-function formatDate(value: string, lang: string) {
+function formatDate(lang: string, value: string) {
   const parsed = new Date(`${value}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString(localeFor(lang as any), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return parsed.toLocaleDateString(localeFor(lang as any), { day: "numeric", month: "short", year: "numeric" });
 }
 
 function FeedbackPage() {
@@ -73,9 +69,7 @@ function FeedbackPage() {
     return (
       <EmptyState
         title={t("No children linked to your account yet")}
-        description={t(
-          "Please contact the school office so your child's record can be linked to this login.",
-        )}
+        description={t("Please contact the school office so your child's record can be linked to this login.")}
       />
     );
   }
@@ -88,16 +82,9 @@ function FeedbackPage() {
         <h1 className="page-title">{t("Teacher feedback")}</h1>
         <p className="meta-text mt-1.5">
           {child.full_name}
-          {child.class && (
-            <>
-              {" · "}
-              {t("Class {name}", {
-                name: child.class.division
-                  ? `${child.class.name}-${child.class.division}`
-                  : child.class.name,
-              })}
-            </>
-          )}
+          {child.class
+            ? t(" · Class {name}", { name: child.class.division ? `${child.class.name}-${child.class.division}` : child.class.name })
+            : ""}
         </p>
       </header>
 
@@ -134,7 +121,7 @@ function FeedbackPage() {
                   <p className="truncate text-sm font-bold text-foreground">{item.teacher_name}</p>
                   {item.subject ? <p className="meta-text mt-0.5">{item.subject}</p> : null}
                 </div>
-                <p className="meta-text shrink-0">{formatDate(item.note_date, lang)}</p>
+                <p className="meta-text shrink-0">{formatDate(lang, item.note_date)}</p>
               </div>
               <p className="mt-3 text-sm leading-relaxed text-foreground/90">{item.note}</p>
             </li>

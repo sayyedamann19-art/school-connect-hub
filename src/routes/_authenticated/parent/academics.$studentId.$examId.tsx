@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Printer } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 import { PrintableMarksheet } from "@/components/academics/printable-marksheet";
 import { Button } from "@/components/ui/button";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { getStudentExamResult } from "@/lib/academics.functions";
-import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/parent/academics/$studentId/$examId")({
   head: () => ({
@@ -50,10 +50,7 @@ function ExamResultPage() {
     return (
       <div className="space-y-4">
         {back}
-        <EmptyState
-          title={t("Result not available")}
-          description={t("This result isn't published or isn't linked to your account.")}
-        />
+        <EmptyState title={t("Result not available")} description={t("This result isn't published or isn't linked to your account.")} />
       </div>
     );
 
@@ -72,7 +69,7 @@ function ExamResultPage() {
         <h1 className="page-title">{d.exam.name}</h1>
         <p className="meta-text mt-1.5">
           {d.student.full_name}
-          {d.className ? ` · ${t("Class {className}", { className: d.className })}` : ""} · {d.exam.academic_year}
+          {d.className ? t(" · Class {name}", { name: d.className }) : ""} · {d.exam.academic_year}
         </p>
       </header>
 
