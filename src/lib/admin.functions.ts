@@ -129,6 +129,50 @@ export const adminUpdateClass = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Delete a class division. Blocked while students, exam results or teacher notes
+ * still reference it, so history is never lost silently. Teacher assignments and
+ * the per-class subject template are removed with the class.
+ */
+export const adminDeleteClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ classId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { supabase } = context;
+
+    const { count: studentCount } = await supabase
+      .from("students")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", data.classId);
+    if ((studentCount ?? 0) > 0) {
+      throw new Error("This class still has students. Move or remove them first.");
+    }
+    const { count: resultCount } = await supabase
+      .from("academic_results")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", data.classId);
+    if ((resultCount ?? 0) > 0) {
+      throw new Error("This class has recorded exam results and can't be deleted.");
+    }
+    const { count: noteCount } = await supabase
+      .from("teacher_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", data.classId);
+    if ((noteCount ?? 0) > 0) {
+      throw new Error("This class has teacher notes linked to it and can't be deleted.");
+    }
+
+    for (const table of ["class_teachers", "class_subjects"] as const) {
+      const { error } = await supabase.from(table).delete().eq("class_id", data.classId);
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await supabase.from("classes").delete().eq("id", data.classId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export type AdminTeacher = {
   id: string;
   profile_id: string;
