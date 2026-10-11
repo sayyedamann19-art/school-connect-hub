@@ -219,8 +219,9 @@ async function parentSignIn(sb: Admin, input: z.infer<typeof schemas.parent_sign
       .select("parent:profiles(login_alias)")
       .eq("student_id", student.id)
       .order("created_at")
-      .limit(1);
-    alias = links?.[0]?.parent?.login_alias ?? null;
+      .limit(10);
+    // Staff accounts linked for testing have no parent login alias; use the parent login.
+    alias = (links ?? []).map((l) => l.parent?.login_alias).find(Boolean) ?? null;
   }
 
   // Always attempt a password check so unknown GR numbers take the same path and time.
