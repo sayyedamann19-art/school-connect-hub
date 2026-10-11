@@ -33,6 +33,7 @@ export type NavPath =
   | "/teacher/attendance"
   | "/teacher/feedback"
   | "/teacher/character"
+  | "/teacher/updates"
   | "/admin"
   | "/admin/students"
   | "/admin/classes"
@@ -72,6 +73,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Feedback", to: "/teacher/feedback", icon: MessageSquareText },
     { label: "Character", to: "/teacher/character", icon: Award },
     { label: "Results", to: "/teacher/academics", icon: BookOpen },
+    { label: "Updates", to: "/teacher/updates", icon: Bell },
     { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
