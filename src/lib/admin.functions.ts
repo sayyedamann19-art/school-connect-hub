@@ -1,3 +1,5 @@
+import { getRequest } from "@tanstack/react-start/server";
+import type { AccountAction } from "@/lib/account-rules";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -24,6 +26,13 @@ const classInput = z.object({
     .trim()
     .regex(/^\d{4}-\d{4}$/, "Use the format 2026-2027"),
 });
+
+
+/** Privileged login work goes through the account service with the caller's own token. */
+async function accountService<T>(action: AccountAction, payload: unknown): Promise<T> {
+  const { runAccountAction, bearerFrom } = await import("@/lib/account-admin.server");
+  return runAccountAction<T>(action, payload, { token: bearerFrom(getRequest()) });
+}
 
 export type AdminClass = {
   id: string;
@@ -188,41 +197,9 @@ export const adminCreateTeacher = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await assertAdmin(context.supabase as any);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { full_name: data.fullName },
-    });
-    if (authError || !created.user) {
-      throw new Error(authError?.message ?? "Couldn't create the teacher login");
-    }
-    const profileId = created.user.id;
-
-    await supabaseAdmin.from("profiles").upsert(
-      {
-        id: profileId,
-        full_name: data.fullName,
-        ...(data.phone ? { phone: data.phone } : {}),
-      },
-      { onConflict: "id" },
-    );
-    await supabaseAdmin
-      .from("user_roles")
-      .upsert({ user_id: profileId, role: "teacher" }, { onConflict: "user_id,role" });
-
-    const { error: teacherError } = await supabaseAdmin.from("teachers").insert({
-      profile_id: profileId,
-      ...(data.employeeCode ? { employee_code: data.employeeCode } : {}),
-    });
-    if (teacherError) throw new Error(teacherError.message);
-
-    return { ok: true };
+  .handler(async ({ data }) => {
+    // Login creation runs in the account service, which re-verifies the admin role.
+    return accountService<{ ok: true }>("create_teacher", data);
   });
 
 export const adminSetTeacherActive = createServerFn({ method: "POST" })
@@ -314,73 +291,8 @@ export const adminCreateStudent = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await assertAdmin(context.supabase as any);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: clash } = await supabaseAdmin
-      .from("students")
-      .select("id")
-      .ilike("gr_number", data.grNumber)
-      .maybeSingle();
-    if (clash) throw new Error("A student with that GR number already exists");
-
-    const { data: student, error } = await supabaseAdmin
-      .from("students")
-      .insert({
-        full_name: data.fullName,
-        gr_number: data.grNumber,
-        class_id: data.classId ?? null,
-        roll_number: data.rollNumber ?? null,
-        date_of_birth: data.dateOfBirth ?? null,
-        height_cm: data.heightCm ?? null,
-        weight_kg: data.weightKg ?? null,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-
-    if (data.parentPhone) {
-      const { data: existingParent } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("phone", data.parentPhone)
-        .maybeSingle();
-
-      let parentId = existingParent?.id ?? null;
-      if (!parentId) {
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: parentAlias(data.parentPhone),
-          password: data.parentPhone,
-          email_confirm: true,
-          user_metadata: { full_name: data.parentName ?? "Parent" },
-        });
-        if (authError || !authUser.user) {
-          throw new Error(authError?.message ?? "Couldn't create the parent account");
-        }
-        parentId = authUser.user.id;
-        await supabaseAdmin
-          .from("user_roles")
-          .upsert({ user_id: parentId, role: "parent" }, { onConflict: "user_id,role" });
-      }
-
-      await supabaseAdmin.from("profiles").upsert(
-        {
-          id: parentId,
-          full_name: data.parentName ?? "Parent",
-          phone: data.parentPhone,
-          login_alias: parentAlias(data.parentPhone),
-        },
-        { onConflict: "id" },
-      );
-
-      await supabaseAdmin
-        .from("parent_students")
-        .insert({ parent_id: parentId, student_id: student.id });
-    }
-
-    return { ok: true, studentId: student.id };
+  .handler(async ({ data }) => {
+    return accountService<{ ok: true; studentId: string }>("create_student", data);
   });
 
 export const adminSetStudentActive = createServerFn({ method: "POST" })
@@ -537,15 +449,18 @@ export const adminSetParentActive = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({ parentId: z.string().uuid(), isActive: z.boolean() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await assertAdmin(context.supabase as any);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.parentId, {
-      ban_duration: data.isActive ? "none" : "876000h",
-    });
-    if (error) throw new Error(error.message);
-    return { ok: true };
+  .handler(async ({ data }) => {
+    return accountService<{ ok: true }>("set_parent_active", data);
+  });
+
+/** Sets a new password for a parent login. Admin only (checked again in the account service). */
+export const adminSetParentPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ parentId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    return accountService<{ ok: true }>("set_parent_password", data);
   });
 
 export type AttendanceReportRow = {

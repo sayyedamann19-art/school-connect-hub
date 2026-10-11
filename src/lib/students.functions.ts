@@ -1,3 +1,4 @@
+import { getRequest } from "@tanstack/react-start/server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -143,28 +144,12 @@ export const updateStudent = createServerFn({ method: "POST" })
 
     // Parent contact details are ownership-adjacent, so admins only.
     if (isAdmin && (data.parentName !== undefined || data.parentPhone !== undefined)) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: link } = await supabaseAdmin
-        .from("parent_students")
-        .select("parent_id")
-        .eq("student_id", data.studentId)
-        .limit(1)
-        .maybeSingle();
-      if (link?.parent_id) {
-        const parentPatch: TablesUpdate<"profiles"> = {};
-        if (data.parentName !== undefined) parentPatch['full_name'] = data.parentName;
-        if (data.parentPhone !== undefined) {
-          parentPatch['phone'] = data.parentPhone;
-          parentPatch['login_alias'] = parentAlias(data.parentPhone);
-          await supabaseAdmin.auth.admin.updateUserById(link.parent_id, {
-            email: parentAlias(data.parentPhone),
-            email_confirm: true,
-          });
-        }
-        if (Object.keys(parentPatch).length) {
-          await supabaseAdmin.from("profiles").update(parentPatch).eq("id", link.parent_id);
-        }
-      }
+      const { runAccountAction, bearerFrom } = await import("@/lib/account-admin.server");
+      await runAccountAction("change_parent_contact", {
+        studentId: data.studentId,
+        parentName: data.parentName,
+        parentPhone: data.parentPhone,
+      }, { token: bearerFrom(getRequest()) });
     }
 
     return { ok: true, updatedBy: userId };
