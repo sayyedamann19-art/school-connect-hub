@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { sendUpdatePushNotifications } from "@/lib/push.functions";
 
 export type UpdateCategory = "notice" | "holiday";
 
@@ -78,15 +79,26 @@ export const adminCreateUpdate = createServerFn({ method: "POST" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any);
     const publish = data.isPublished ?? false;
-    const { error } = await context.supabase.from("school_updates").insert({
-      title: data.title,
-      body: data.body,
-      category: data.category,
-      is_published: publish,
-      published_at: publish ? new Date().toISOString() : null,
-      created_by: context.userId,
-    });
+    const { data: row, error } = await context.supabase
+      .from("school_updates")
+      .insert({
+        title: data.title,
+        body: data.body,
+        category: data.category,
+        is_published: publish,
+        published_at: publish ? new Date().toISOString() : null,
+        created_by: context.userId,
+      })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
+    if (publish && row) {
+      void sendUpdatePushNotifications({
+        title: `${data.category === "holiday" ? "Holiday" : "Notice"}: ${data.title}`,
+        body: data.body,
+        updateId: row.id,
+      });
+    }
     return { ok: true };
   });
 
@@ -112,14 +124,24 @@ export const adminSetUpdatePublished = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any);
-    const { error } = await context.supabase
+    const { data: row, error } = await context.supabase
       .from("school_updates")
       .update({
         is_published: data.isPublished,
         published_at: data.isPublished ? new Date().toISOString() : null,
       })
-      .eq("id", data.updateId);
+      .eq("id", data.updateId)
+      .select("id, title, body, category, first_published_at")
+      .single();
     if (error) throw new Error(error.message);
+    // Only alert on the first publish — re-publishing must not re-notify.
+    if (data.isPublished && row && !row.first_published_at) {
+      void sendUpdatePushNotifications({
+        title: `${normalizeCategory(row.category) === "holiday" ? "Holiday" : "Notice"}: ${row.title}`,
+        body: row.body,
+        updateId: row.id,
+      });
+    }
     return { ok: true };
   });
 
@@ -169,15 +191,26 @@ export const teacherCreateUpdate = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertTeacher(context.supabase, context.userId);
     const publish = data.isPublished ?? false;
-    const { error } = await context.supabase.from("school_updates").insert({
-      title: data.title,
-      body: data.body,
-      category: data.category,
-      is_published: publish,
-      published_at: publish ? new Date().toISOString() : null,
-      created_by: context.userId,
-    });
+    const { data: row, error } = await context.supabase
+      .from("school_updates")
+      .insert({
+        title: data.title,
+        body: data.body,
+        category: data.category,
+        is_published: publish,
+        published_at: publish ? new Date().toISOString() : null,
+        created_by: context.userId,
+      })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
+    if (publish && row) {
+      void sendUpdatePushNotifications({
+        title: `${data.category === "holiday" ? "Holiday" : "Notice"}: ${data.title}`,
+        body: data.body,
+        updateId: row.id,
+      });
+    }
     return { ok: true };
   });
 
@@ -212,9 +245,17 @@ export const teacherSetUpdatePublished = createServerFn({ method: "POST" })
       })
       .eq("id", data.updateId)
       .eq("created_by", context.userId)
-      .select("id");
+      .select("id, title, body, category, first_published_at");
     if (error) throw new Error(error.message);
     requireChanged(rows);
+    const row = rows?.[0];
+    if (data.isPublished && row && !row.first_published_at) {
+      void sendUpdatePushNotifications({
+        title: `${normalizeCategory(row.category) === "holiday" ? "Holiday" : "Notice"}: ${row.title}`,
+        body: row.body,
+        updateId: row.id,
+      });
+    }
     return { ok: true };
   });
 
