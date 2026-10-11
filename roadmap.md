@@ -5,3 +5,6 @@
 - [x] Logins created/changed on Cloudflare via account service (needs Lovable re-publish to go live)
 - [x] Manage Class import (admin + teacher), Class 1–10, account-service address fix — needs re-publish + live test
 - [ ] Closed-app push — blocked on Firebase setup + live test
+- [x] Delete Teacher (admin) + class deletion allowed when no students
+- [ ] Dummy data (50 students/parents, 10 teachers) — blocked: only 8 classes exist, need approval to add Class 1–10 set
+- [ ] Admin account role/password — blocked: email + temporary password not included in the plan

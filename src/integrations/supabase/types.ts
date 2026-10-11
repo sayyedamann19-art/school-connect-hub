@@ -706,6 +706,7 @@ export type Database = {
       teachers: {
         Row: {
           created_at: string
+          deleted_at: string | null
           employee_code: string | null
           id: string
           is_active: boolean
@@ -714,6 +715,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
@@ -722,6 +724,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
@@ -790,6 +793,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_class: { Args: { _class_id: string }; Returns: undefined }
+      admin_delete_teacher: {
+        Args: { _teacher_id: string }
+        Returns: undefined
+      }
       admin_parent_account_status: {
         Args: { _ids: string[] }
         Returns: {

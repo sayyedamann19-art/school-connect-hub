@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { GraduationCap, Loader2, Plus, X } from "lucide-react";
+import { GraduationCap, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   adminAssignTeacher,
+  adminDeleteTeacher,
   adminCreateTeacher,
   adminListClasses,
   adminListTeachers,
@@ -64,6 +65,7 @@ function TeachersAdmin() {
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [assigning, setAssigning] = useState<AdminTeacher | null>(null);
+  const [deleting, setDeleting] = useState<AdminTeacher | null>(null);
 
   const teachersQuery = useQuery({
     queryKey: ["admin", "teachers"],
@@ -94,6 +96,19 @@ function TeachersAdmin() {
     },
     onError: (error) =>
       toast.error("Couldn't remove the class", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (teacherId: string) => adminDeleteTeacher({ data: { teacherId } }),
+    onSuccess: () => {
+      toast.success("Teacher deleted");
+      setDeleting(null);
+      refresh();
+    },
+    onError: (error) =>
+      toast.error("Couldn't delete the teacher", {
         description: error instanceof Error ? error.message : undefined,
       }),
   });
@@ -167,10 +182,21 @@ function TeachersAdmin() {
                     ))}
                   </div>
                 )}
-                <Button variant="outline" size="sm" onClick={() => setAssigning(teacher)}>
-                  <Plus className="mr-2 size-4" />
-                  Assign class
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setAssigning(teacher)}>
+                    <Plus className="mr-2 size-4" />
+                    Assign class
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => setDeleting(teacher)}
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete teacher
+                  </Button>
+                </div>
               </div>
             </SectionCard>
           ))}
@@ -178,6 +204,33 @@ function TeachersAdmin() {
       )}
 
       <AddTeacherDialog open={adding} onClose={() => setAdding(false)} />
+      {deleting ? (
+        <Dialog open onOpenChange={(next) => (next ? null : setDeleting(null))}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete {deleting.name}?</DialogTitle>
+              <DialogDescription>
+                They lose teacher access and all class assignments. Their past feedback, character
+                points and updates stay, still showing their name. Students, attendance and results
+                are not touched.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setDeleting(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleting.id)}
+              >
+                {deleteMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Delete teacher
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
       <AssignClassDialog
         teacher={assigning}
         classes={(classesQuery.data ?? []).map((row) => ({
