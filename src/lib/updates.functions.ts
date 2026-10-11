@@ -124,6 +124,13 @@ export const adminSetUpdatePublished = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any);
+    // Read first_published_at BEFORE updating: the trigger stamps it on first
+    // publish, and only a first publish may send push alerts.
+    const { data: before } = await context.supabase
+      .from("school_updates")
+      .select("first_published_at")
+      .eq("id", data.updateId)
+      .single();
     const { data: row, error } = await context.supabase
       .from("school_updates")
       .update({
@@ -131,11 +138,10 @@ export const adminSetUpdatePublished = createServerFn({ method: "POST" })
         published_at: data.isPublished ? new Date().toISOString() : null,
       })
       .eq("id", data.updateId)
-      .select("id, title, body, category, first_published_at")
+      .select("id, title, body, category")
       .single();
     if (error) throw new Error(error.message);
-    // Only alert on the first publish — re-publishing must not re-notify.
-    if (data.isPublished && row && !row.first_published_at) {
+    if (data.isPublished && row && !before?.first_published_at) {
       void sendUpdatePushNotifications({
         title: `${normalizeCategory(row.category) === "holiday" ? "Holiday" : "Notice"}: ${row.title}`,
         body: row.body,
@@ -237,6 +243,14 @@ export const teacherSetUpdatePublished = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertTeacher(context.supabase, context.userId);
+    // Read first_published_at BEFORE updating: the trigger stamps it on first
+    // publish, and only a first publish may send push alerts.
+    const { data: before } = await context.supabase
+      .from("school_updates")
+      .select("first_published_at")
+      .eq("id", data.updateId)
+      .eq("created_by", context.userId)
+      .single();
     const { data: rows, error } = await context.supabase
       .from("school_updates")
       .update({
@@ -245,11 +259,11 @@ export const teacherSetUpdatePublished = createServerFn({ method: "POST" })
       })
       .eq("id", data.updateId)
       .eq("created_by", context.userId)
-      .select("id, title, body, category, first_published_at");
+      .select("id, title, body, category");
     if (error) throw new Error(error.message);
     requireChanged(rows);
     const row = rows?.[0];
-    if (data.isPublished && row && !row.first_published_at) {
+    if (data.isPublished && row && !before?.first_published_at) {
       void sendUpdatePushNotifications({
         title: `${normalizeCategory(row.category) === "holiday" ? "Holiday" : "Notice"}: ${row.title}`,
         body: row.body,
