@@ -1,12 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Loader2, Pencil, Plus, School, Settings2 } from "lucide-react";
+import { ChevronRight, Loader2, Pencil, Plus, School, Settings2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +36,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { STANDARD_CLASSES } from "@/lib/student-import";
-import { adminCreateClass, adminListClasses, adminUpdateClass, type AdminClass } from "@/lib/admin.functions";
+import {
+  adminCreateClass,
+  adminDeleteClass,
+  adminListClasses,
+  adminUpdateClass,
+  type AdminClass,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/classes")({
   head: () => ({
@@ -76,6 +92,7 @@ function ClassesAdmin() {
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; row: AdminClass } | null>(
     null,
   );
+  const [deleteTarget, setDeleteTarget] = useState<AdminClass | null>(null);
 
   const classesQuery = useQuery({ queryKey: ["admin", "classes"], queryFn: () => adminListClasses() });
 
@@ -161,6 +178,15 @@ function ClassesAdmin() {
                         <Pencil className="mr-2 size-4" />
                         Edit
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(row)}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Delete
+                      </Button>
                     </div>
                   </li>
                 ))}
@@ -171,7 +197,56 @@ function ClassesAdmin() {
       )}
 
       <ClassDialog dialog={dialog} onClose={() => setDialog(null)} />
+      <DeleteClassDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </div>
+  );
+}
+
+function DeleteClassDialog({ target, onClose }: { target: AdminClass | null; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (classId: string) => adminDeleteClass({ data: { classId } }),
+    onSuccess: () => {
+      toast.success("Class deleted");
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["classes"] });
+      onClose();
+    },
+    onError: (error) => {
+      toast.error("Couldn't delete the class", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    },
+  });
+
+  if (!target) return null;
+  const label = `${target.name}${target.division ? ` · Division ${target.division}` : ""} (${target.academic_year})`;
+
+  return (
+    <AlertDialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {label}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes the class, its teacher assignments and its subject format. Classes that still
+            have students, exam results or teacher notes can't be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={mutation.isPending}
+            onClick={(event) => {
+              event.preventDefault();
+              mutation.mutate(target.id);
+            }}
+          >
+            {mutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            Delete class
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
