@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { gateUrl, schoolMotto, schoolName } from "@/lib/brand";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveParentLogin } from "@/lib/parent-auth.functions";
+import { parentSignIn } from "@/lib/parent-auth.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
