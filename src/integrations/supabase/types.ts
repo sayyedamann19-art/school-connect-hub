@@ -772,6 +772,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_parent_account_status: {
+        Args: { _ids: string[] }
+        Returns: {
+          is_suspended: boolean
+          user_id: string
+        }[]
+      }
       can_edit_student: { Args: { _student_id: string }; Returns: boolean }
       claim_update_push: {
         Args: { _update_id: string }
@@ -806,6 +813,16 @@ export type Database = {
           teacher_name: string
         }[]
       }
+      get_student_parent_contacts: {
+        Args: { _student_ids: string[] }
+        Returns: {
+          full_name: string
+          parent_id: string
+          phone: string
+          relationship: string
+          student_id: string
+        }[]
+      }
       get_update_senders: {
         Args: { _update_ids: string[] }
         Returns: {
@@ -821,8 +838,34 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_student_lookup: {
+        Args: never
+        Returns: {
+          full_name: string
+          gr_number: string
+          id: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_parent_of_student: { Args: { _student_id: string }; Returns: boolean }
+      list_my_class_parents: {
+        Args: never
+        Returns: {
+          class_label: string
+          full_name: string
+          gr_number: string
+          parent_id: string
+          phone: string
+          relationship: string
+          roll_number: string
+          student_id: string
+          student_name: string
+        }[]
+      }
+      set_student_photo: {
+        Args: { _path: string; _student_id: string }
+        Returns: string
+      }
       teaches_class: { Args: { _class_id: string }; Returns: boolean }
       teaches_student: { Args: { _student_id: string }; Returns: boolean }
     }
