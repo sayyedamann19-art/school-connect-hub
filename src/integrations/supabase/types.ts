@@ -457,6 +457,7 @@ export type Database = {
           id: string
           is_published: boolean
           published_at: string | null
+          push_sent_at: string | null
           title: string
           updated_at: string
         }
@@ -469,6 +470,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           published_at?: string | null
+          push_sent_at?: string | null
           title: string
           updated_at?: string
         }
@@ -481,6 +483,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           published_at?: string | null
+          push_sent_at?: string | null
           title?: string
           updated_at?: string
         }
@@ -770,6 +773,15 @@ export type Database = {
     }
     Functions: {
       can_edit_student: { Args: { _student_id: string }; Returns: boolean }
+      claim_update_push: {
+        Args: { _update_id: string }
+        Returns: {
+          body: string
+          category: string
+          id: string
+          title: string
+        }[]
+      }
       current_teacher_id: { Args: never; Returns: string }
       exam_is_published: { Args: { _exam_id: string }; Returns: boolean }
       get_student_character_points: {
