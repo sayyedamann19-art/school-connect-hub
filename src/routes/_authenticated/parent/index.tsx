@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { greetingFor } from "@/lib/greeting";
 
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing } from "@/components/parent/progress-visuals";
@@ -46,6 +47,11 @@ function formatDate(value: string) {
 }
 
 function ParentHome() {
+  const [greeting, setGreeting] = useState(() => greetingFor());
+  useEffect(() => {
+    const id = window.setInterval(() => setGreeting(greetingFor()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["parent", "children"],
