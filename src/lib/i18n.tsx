@@ -22,9 +22,8 @@ export function translate(lang: Lang, text: string, vars?: Record<string, string
 }
 
 const STORAGE_KEY = "dbs-lang";
-type Ctx = { lang: Lang; setLang: (l: Lang) => Promise<void>; t: typeof tFn };
 type TFn = (text: string, vars?: Record<string, string | number>) => string;
-declare const tFn: TFn;
+type Ctx = { lang: Lang; setLang: (l: Lang) => Promise<void>; t: TFn };
 const I18nContext = createContext<Ctx | null>(null);
 
 const isLang = (v: unknown): v is Lang => v === "en" || v === "hi" || v === "mr";
