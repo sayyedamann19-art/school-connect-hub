@@ -60,9 +60,7 @@ const api = {
 
 const categories = [
   { value: "notice", label: "Notice" },
-  { value: "school", label: "School" },
-  { value: "attendance", label: "Attendance" },
-  { value: "feedback", label: "Feedback" },
+  { value: "holiday", label: "Holiday" },
 ] as const;
 
 export function UpdatesManager({ scope }: { scope: Scope }) {

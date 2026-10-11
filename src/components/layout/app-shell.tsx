@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, LogOut, Menu } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
 import {
@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth, useSignOut } from "@/hooks/use-auth";
-import { usePushPermission } from "@/hooks/use-push-permission";
+import { useParentUpdates } from "@/hooks/use-parent-updates";
+import { UpdateNotifier } from "@/components/updates/update-notifier";
 import { initials } from "@/components/common/student-card";
 import { schoolMotto } from "@/lib/brand";
 import { cn } from "@/lib/utils";
@@ -176,7 +177,6 @@ function MobileNavBar() {
 
   if (items.length === 0) return null;
 
-
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch px-2 py-1.5">
@@ -210,12 +210,8 @@ function MobileNavBar() {
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { session, primaryRole } = useAuth();
-  const { requestOnFirstOpen } = usePushPermission();
-
-  useEffect(() => {
-    if (!session) return;
-    void requestOnFirstOpen();
-  }, [session, requestOnFirstOpen]);
+  const isParent = Boolean(session) && primaryRole === "parent";
+  const { unread } = useParentUpdates(isParent);
 
   return (
     <div className="min-h-screen bg-background">
@@ -251,9 +247,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-1">
             {primaryRole === "parent" ? (
               <Button variant="ghost" size="icon" className="relative size-10 rounded-full" asChild>
-                <Link to="/parent/notifications" aria-label="Notifications">
+                <Link
+                  to="/parent/notifications"
+                  aria-label={unread.length ? `Updates, ${unread.length} unread` : "Updates"}
+                >
                   <Bell className="size-5" strokeWidth={1.75} />
-                  <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-danger ring-2 ring-surface" />
+                  {unread.length ? (
+                    <span className="absolute right-1 top-1 flex min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[0.625rem] font-bold leading-4 text-danger-foreground ring-2 ring-surface">
+                      {unread.length > 9 ? "9+" : unread.length}
+                    </span>
+                  ) : null}
                 </Link>
               </Button>
             ) : null}
@@ -261,10 +264,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:pb-12">
+          {children}
+        </main>
       </div>
 
       <MobileNavBar />
+      {isParent ? <UpdateNotifier /> : null}
     </div>
   );
 }

@@ -3,12 +3,27 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type UpdateCategory = "notice" | "holiday";
+
+/** Old rows may still carry school/attendance/feedback; they are shown as Notice. */
+export function normalizeCategory(value: string | null | undefined): UpdateCategory {
+  return value === "holiday" ? "holiday" : "notice";
+}
+
+function normalizeRows(rows: unknown[] | null): SchoolUpdate[] {
+  return ((rows ?? []) as SchoolUpdate[]).map((row) => ({
+    ...row,
+    category: normalizeCategory(row.category),
+  }));
+}
+
 export type SchoolUpdate = {
   id: string;
   title: string;
   body: string;
-  category: "school" | "attendance" | "feedback" | "notice";
+  category: UpdateCategory;
   is_published: boolean;
+  first_published_at?: string | null;
   published_at: string | null;
   created_at: string;
 };
@@ -16,7 +31,7 @@ export type SchoolUpdate = {
 const updateInput = z.object({
   title: z.string().trim().min(3).max(120),
   body: z.string().trim().min(3).max(2000),
-  category: z.enum(["school", "attendance", "feedback", "notice"]),
+  category: z.enum(["notice", "holiday"]),
   isPublished: z.boolean().optional(),
 });
 
@@ -31,12 +46,14 @@ export const listPublishedUpdates = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<SchoolUpdate[]> => {
     const { data, error } = await context.supabase
       .from("school_updates")
-      .select("id, title, body, category, is_published, published_at, created_at")
+      .select(
+        "id, title, body, category, is_published, published_at, first_published_at, created_at",
+      )
       .eq("is_published", true)
-      .order("published_at", { ascending: false })
+      .order("first_published_at", { ascending: false, nullsFirst: false })
       .limit(100);
     if (error) throw new Error(error.message);
-    return (data ?? []) as SchoolUpdate[];
+    return normalizeRows(data);
   });
 
 /** Every update, drafts included. Admin only (RLS also restricts drafts). */
@@ -51,7 +68,7 @@ export const adminListUpdates = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return (data ?? []) as SchoolUpdate[];
+    return normalizeRows(data);
   });
 
 export const adminCreateUpdate = createServerFn({ method: "POST" })
@@ -143,7 +160,7 @@ export const teacherListUpdates = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return (data ?? []) as SchoolUpdate[];
+    return normalizeRows(data);
   });
 
 export const teacherCreateUpdate = createServerFn({ method: "POST" })
@@ -214,5 +231,57 @@ export const teacherDeleteUpdate = createServerFn({ method: "POST" })
       .select("id");
     if (error) throw new Error(error.message);
     requireChanged(rows);
+    return { ok: true };
+  });
+
+/* ---------- Parent: read status and notification preference ---------- */
+
+export const listReadUpdateIds = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<string[]> => {
+    const { data, error } = await context.supabase
+      .from("update_reads")
+      .select("update_id")
+      .eq("user_id", context.userId)
+      .limit(1000);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => row.update_id);
+  });
+
+export const markUpdatesRead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ updateIds: z.array(z.string().uuid()).min(1).max(200) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("update_reads").upsert(
+      data.updateIds.map((id) => ({ user_id: context.userId, update_id: id })),
+      { onConflict: "user_id,update_id", ignoreDuplicates: true },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getUpdateNotificationPref = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ notifyUpdates: boolean }> => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("notify_updates")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { notifyUpdates: data?.notify_updates ?? true };
+  });
+
+export const setUpdateNotificationPref = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ notifyUpdates: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ notify_updates: data.notifyUpdates })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });

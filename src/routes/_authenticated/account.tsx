@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +10,10 @@ import { roleLabel } from "@/components/layout/nav-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { notifyPrefKey, useNotifyPref } from "@/hooks/use-parent-updates";
+import { usePushPermission } from "@/hooks/use-push-permission";
+import { setUpdateNotificationPref } from "@/lib/updates.functions";
 import { useAuth, useSignOut } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -93,6 +98,8 @@ function AccountPage() {
         </dl>
       </SectionCard>
 
+      {primaryRole === "parent" ? <NotificationSettings /> : null}
+
       <SectionCard
         title="Change password"
         description="Optional. Until you change it, your registered phone number remains your password."
@@ -142,5 +149,56 @@ function AccountPage() {
         Sign out
       </Button>
     </div>
+  );
+}
+
+function NotificationSettings() {
+  const queryClient = useQueryClient();
+  const pref = useNotifyPref();
+  const push = usePushPermission();
+  const save = useMutation({
+    mutationFn: (notifyUpdates: boolean) => setUpdateNotificationPref({ data: { notifyUpdates } }),
+    onSuccess: (_r, notifyUpdates) => {
+      queryClient.setQueryData(notifyPrefKey, { notifyUpdates });
+      toast.success(notifyUpdates ? "Update alerts turned on" : "Update alerts turned off");
+    },
+    onError: () => toast.error("Couldn't save your choice. Please try again."),
+  });
+  const on = pref.data?.notifyUpdates ?? true;
+
+  return (
+    <SectionCard
+      title="Notifications"
+      description="New school updates always stay in the Updates page, even if alerts are off."
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="notify-updates" className="text-sm">
+            Show a pop-up when the school publishes an update
+          </Label>
+          <Switch
+            id="notify-updates"
+            checked={on}
+            disabled={pref.isLoading || save.isPending}
+            onCheckedChange={(checked) => save.mutate(checked)}
+          />
+        </div>
+        {on && push.state === "default" ? (
+          <Button
+            variant="outline"
+            className="h-11 rounded-xl"
+            onClick={() => void push.requestPermission()}
+          >
+            Also alert me when this tab is in the background
+          </Button>
+        ) : null}
+        {on && push.state === "denied" ? (
+          <p className="meta-text">
+            Device alerts are blocked in your browser settings. You'll still see pop-ups inside the
+            app.
+          </p>
+        ) : null}
+      </div>
+    </SectionCard>
   );
 }
