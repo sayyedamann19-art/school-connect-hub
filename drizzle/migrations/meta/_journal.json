@@ -71,6 +71,13 @@
       "when": 1791704905429,
       "tag": "0009_updates_categories_and_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791705357226,
+      "tag": "0010_push_tokens",
+      "breakpoints": true
     }
   ]
 }

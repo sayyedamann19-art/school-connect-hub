@@ -183,14 +183,24 @@ function NotificationSettings() {
             onCheckedChange={(checked) => save.mutate(checked)}
           />
         </div>
-        {on && push.state === "default" ? (
+        {on && push.pushStatus !== "registered" && push.state !== "denied" ? (
           <Button
             variant="outline"
             className="h-11 rounded-xl"
-            onClick={() => void push.requestPermission()}
+            disabled={push.registering}
+            onClick={() => void push.enableClosedAppAlerts()}
           >
-            Also alert me when this tab is in the background
+            {push.registering ? "Turning on…" : "Alert me even when the app is closed"}
           </Button>
+        ) : null}
+        {on && push.pushStatus === "registered" ? (
+          <p className="meta-text">This device gets alerts even when the app is closed.</p>
+        ) : null}
+        {on && push.pushStatus === "open-in-new-tab" ? (
+          <p className="meta-text">
+            Open the app in its own browser tab (or the installed app) to turn on closed-app
+            alerts.
+          </p>
         ) : null}
         {on && push.state === "denied" ? (
           <p className="meta-text">
