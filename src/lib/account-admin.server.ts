@@ -486,6 +486,9 @@ export async function runAccountAction<T>(
   } catch {
     throw new AccountError("The account service is unreachable. Please try again.", 503);
   }
+  if (res.status >= 300 && res.status < 400) {
+    throw new AccountError("The account service address is out of date. Please contact the school office.", 503);
+  }
   const body = (await res.json().catch(() => null)) as { error?: string; result?: T } | null;
   if (!res.ok) throw new AccountError(body?.error ?? "Something went wrong. Please try again.", res.status);
   return body?.result as T;
