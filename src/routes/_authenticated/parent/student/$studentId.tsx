@@ -4,7 +4,7 @@ import { Award, CalendarCheck, ChevronLeft, NotebookPen, Percent } from "lucide-
 
 import { DefinitionList, PageHeader, SectionCard } from "@/components/common/section-card";
 import { StatCard } from "@/components/common/stat-card";
-import { ErrorState, LoadingCards } from "@/components/common/states";
+import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
 import { classLabel } from "@/components/common/student-card";
 import { RoleGate } from "@/components/layout/role-gate";
