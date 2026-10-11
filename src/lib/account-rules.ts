@@ -11,6 +11,7 @@ export const ACCOUNT_ACTIONS = [
   "set_parent_active",
   "set_parent_password",
   "change_parent_contact",
+  "create_parent",
 ] as const;
 export type AccountAction = (typeof ACCOUNT_ACTIONS)[number];
 
@@ -55,4 +56,12 @@ export function isLockedOut(recentFailures: number): boolean {
 /** Escape LIKE wildcards so a GR lookup is an exact, case-insensitive match. */
 export function exactIlike(value: string) {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Students who would be left with no parent login if this parent were deleted.
+ * `otherParents` is how many OTHER parent accounts are linked to each student.
+ */
+export function soleParentStudents<T extends { otherParents: number }>(students: T[]): T[] {
+  return students.filter((s) => s.otherParents === 0);
 }

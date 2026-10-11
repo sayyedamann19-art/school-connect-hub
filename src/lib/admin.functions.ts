@@ -372,6 +372,8 @@ export type AdminParentStudent = {
   isActive: boolean;
   classLabel: string | null;
   relationship: string;
+  /** Other parent accounts also linked to this student. */
+  otherParents: number;
 };
 
 export type AdminParent = {
@@ -412,6 +414,16 @@ export const adminListParents = createServerFn({ method: "GET" })
       sb.rpc("admin_parent_account_status", { _ids: parentIds }),
     ]);
 
+    const studentIds = [...new Set((links ?? []).map((l) => l.student?.id).filter(Boolean) as string[])];
+    const { data: allLinks } = studentIds.length
+      ? await sb.from("parent_students").select("parent_id, student_id").in("student_id", studentIds)
+      : { data: [] as { parent_id: string; student_id: string }[] };
+    const parentsOf = new Map<string, Set<string>>();
+    for (const l of allLinks ?? []) {
+      if (!parentsOf.has(l.student_id)) parentsOf.set(l.student_id, new Set());
+      parentsOf.get(l.student_id)!.add(l.parent_id);
+    }
+
     const bannedById = new Map<string, boolean>();
     for (const row of statusResult.data ?? []) bannedById.set(row.user_id, row.is_suspended);
 
@@ -436,6 +448,7 @@ export const adminListParents = createServerFn({ method: "GET" })
             ? `${link.student!.class.name}${link.student!.class.division ? `-${link.student!.class.division}` : ""}`
             : null,
           relationship: link.relationship,
+          otherParents: [...(parentsOf.get(link.student!.id) ?? [])].filter((id) => id !== profile.id).length,
         })),
     }));
 
@@ -493,6 +506,76 @@ export const adminUnlinkParentStudent = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("parent_students").delete().eq("id", data.linkId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/** Creates a parent login and links one or more existing students. Admin only. */
+export const adminCreateParent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2, "Enter the parent's name").max(120),
+        phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number"),
+        relationship: z.string().trim().max(30).optional(),
+        studentIds: z.array(z.string().uuid()).min(1, "Link at least one student").max(10),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    return accountService<{ ok: true; parentId: string }>("create_parent", data);
+  });
+
+/**
+ * Removes a parent account's access: unlinks all children and removes the parent role.
+ * Student records, attendance, results and history are never touched. Students who would be
+ * left with no parent are refused unless the admin explicitly confirms unlinking them.
+ */
+export const adminDeleteParent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ parentId: z.string().uuid(), unlinkSoleChildren: z.boolean().default(false) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const sb = context.supabase;
+    const { isManageableParent, soleParentStudents } = await import("@/lib/account-rules");
+    const { data: roleRows } = await sb.from("user_roles").select("role").eq("user_id", data.parentId);
+    const roles = (roleRows ?? []).map((r) => r.role as "admin" | "teacher" | "parent");
+    if (!isManageableParent(roles)) throw new Error("Only parent accounts can be deleted here");
+
+    const { data: links, error } = await sb
+      .from("parent_students")
+      .select("student_id, student:students(full_name)")
+      .eq("parent_id", data.parentId);
+    if (error) throw new Error("Couldn't load this parent's children");
+    const ids = (links ?? []).map((l) => l.student_id);
+    const { data: others } = ids.length
+      ? await sb.from("parent_students").select("student_id").in("student_id", ids).neq("parent_id", data.parentId)
+      : { data: [] as { student_id: string }[] };
+    const sole = soleParentStudents(
+      (links ?? []).map((l) => ({
+        name: l.student?.full_name ?? "Student",
+        otherParents: (others ?? []).filter((o) => o.student_id === l.student_id).length,
+      })),
+    );
+    if (sole.length && !data.unlinkSoleChildren) {
+      throw new Error(
+        `${sole.map((s) => s.name).join(", ")} would have no parent login. Link another parent first, or confirm unlinking.`,
+      );
+    }
+
+    const { error: unlinkErr } = await sb.from("parent_students").delete().eq("parent_id", data.parentId);
+    if (unlinkErr) throw new Error("Couldn't unlink this parent's children");
+    const { error: roleErr } = await sb
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.parentId)
+      .eq("role", "parent");
+    if (roleErr) throw new Error("Children unlinked, but the parent role couldn't be removed");
+    return { ok: true, unlinked: ids.length };
   });
 
 /** Suspends or restores a parent login without deleting any records. */
