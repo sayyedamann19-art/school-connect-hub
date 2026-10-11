@@ -30,7 +30,22 @@ type Stage = "upload" | "preview" | "done";
 
 type ImportResult = Awaited<ReturnType<typeof runStudentImport>>;
 
-export function StudentImportWizard({ scope }: { scope: "admin" | "teacher" }) {
+export type WizardClass = { id: string; name: string; division: string | null; academicYear: string };
+
+export function StudentImportWizard({
+  scope,
+  targetClass,
+  embedded = false,
+}: {
+  scope: "admin" | "teacher";
+  /** Manage Class: every row is imported into this class and academic year. */
+  targetClass?: WizardClass;
+  embedded?: boolean;
+}) {
+  const target = targetClass ? { name: targetClass.name, division: targetClass.division } : null;
+  const targetLabel = targetClass
+    ? `${targetClass.name}${targetClass.division ? ` ${targetClass.division}` : ""}`
+    : "";
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>("upload");
@@ -49,7 +64,9 @@ export function StudentImportWizard({ scope }: { scope: "admin" | "teacher" }) {
 
   const importMutation = useMutation({
     mutationFn: (validRows: RawRow[]) =>
-      runStudentImport({ data: { fileName, rows: validRows } }),
+      runStudentImport({
+        data: { fileName, rows: validRows, ...(targetClass ? { classId: targetClass.id } : {}) },
+      }),
     onSuccess: (data) => {
       setResult(data);
       setStage("done");
@@ -89,6 +106,7 @@ export function StudentImportWizard({ scope }: { scope: "admin" | "teacher" }) {
         validateRows(parsed.rows, {
           existingByGr: contextQuery.data.existingByGr,
           allowedClassKeys: contextQuery.data.allowedClassKeys,
+          targetClass: target,
         }),
       );
       setStage("preview");
@@ -105,7 +123,11 @@ export function StudentImportWizard({ scope }: { scope: "admin" | "teacher" }) {
     return (
       <ErrorState
         title="We couldn't prepare the importer"
-        description="You may not have permission to import students."
+        description={
+          contextQuery.error instanceof Error
+            ? contextQuery.error.message
+            : "Please try again in a moment."
+        }
         onRetry={() => void contextQuery.refetch()}
       />
     );
@@ -118,20 +140,26 @@ export function StudentImportWizard({ scope }: { scope: "admin" | "teacher" }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {embedded ? null : <PageHeader
         title="Import students from Excel"
         description={
-          scope === "admin"
+          targetClass
+            ? `Students in this file are added to ${targetLabel} (${targetClass.academicYear}). Nothing is saved until you confirm.`
+            : scope === "admin"
             ? "Download the official template, fill it in, then upload it. Nothing is saved until you confirm."
             : "Import students for the classes you are assigned to. Nothing is saved until you confirm."
         }
-      />
+      />}
 
       <SectionCard
         title="1. Download the template"
-        description="The workbook includes a Student Data sheet and an Instructions sheet with formats and examples."
+        description={
+          targetClass
+            ? `Pre-filled for ${targetLabel}. You can leave Class and Division blank — they are filled in automatically.`
+            : "The workbook includes a Student Data sheet and an Instructions sheet with formats and examples."
+        }
       >
-        <Button variant="outline" onClick={() => void downloadStudentTemplate()}>
+        <Button variant="outline" onClick={() => void downloadStudentTemplate(target)}>
           <Download className="mr-2 size-4" />
           Download template
         </Button>

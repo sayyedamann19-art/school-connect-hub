@@ -55,6 +55,7 @@ const schemas = {
     parentPhone: phone.optional(),
   }),
   import_rows: z.object({
+    classId: z.string().uuid().optional(),
     academicYear: z.string().regex(/^\d{4}-\d{4}$/),
     rows: z
       .array(
@@ -254,10 +255,26 @@ async function importRows(
   const key = (n: string, d: string | null) => `${n.trim().toLowerCase()}|${(d ?? "").trim().toLowerCase()}`;
   const classIdByKey = new Map((classes ?? []).map((c) => [key(c.name, c.division), c.id]));
 
+  // Manage Class import: every row goes to the chosen class, which the caller must be allowed to use.
+  let fixedClassId: string | null = null;
+  if (input.classId) {
+    const target = (classes ?? []).find((c) => c.id === input.classId);
+    if (!target) throw new AccountError("That class no longer exists", 404);
+    if (!isAdmin && !teacherClassIds.has(target.id)) {
+      throw new AccountError("You can only import into your own classes", 403);
+    }
+    fixedClassId = target.id;
+    for (const row of input.rows) {
+      if (key(row.className, row.division) !== key(target.name, target.division)) {
+        throw new AccountError("Every row must belong to the class you are importing into");
+      }
+    }
+  }
+
   const results: ImportRowResult[] = [];
   for (const row of input.rows) {
     try {
-      let classId = classIdByKey.get(key(row.className, row.division)) ?? null;
+      let classId = fixedClassId ?? classIdByKey.get(key(row.className, row.division)) ?? null;
       if (!classId) {
         if (!isAdmin) throw new AccountError("This class doesn't exist yet — ask an administrator to create it");
         const { data: c, error } = await sb
@@ -438,7 +455,9 @@ export async function executeAccountAction(
   throw new AccountError("Unknown action");
 }
 
-const DEFAULT_SERVICE_URL = "https://edu-bond-suite.lovable.app";
+// The Lovable-hosted copy is served on this custom domain. The *.lovable.app address redirects
+// here, and browsers/fetch drop the sign-in header on a cross-site redirect, so call it directly.
+const DEFAULT_SERVICE_URL = "https://dawnbreakerschool.app";
 
 /**
  * Entry point for app server functions. Runs locally when this server holds the master key
@@ -458,13 +477,17 @@ export async function runAccountAction<T>(
   if (opts.ip) headers["x-dbs-client-ip"] = opts.ip;
   let res: Response;
   try {
-    res = await fetch(`${base}/api/public/account-admin`, {
+    res = await fetch(`${base.replace(/\/$/, "")}/api/public/account-admin`, {
       method: "POST",
+      redirect: "manual",
       headers,
       body: JSON.stringify({ action, payload }),
     });
   } catch {
     throw new AccountError("The account service is unreachable. Please try again.", 503);
+  }
+  if (res.status >= 300 && res.status < 400) {
+    throw new AccountError("The account service address is out of date. Please contact the school office.", 503);
   }
   const body = (await res.json().catch(() => null)) as { error?: string; result?: T } | null;
   if (!res.ok) throw new AccountError(body?.error ?? "Something went wrong. Please try again.", res.status);

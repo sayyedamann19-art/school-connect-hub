@@ -60,6 +60,13 @@ function ensurePublicBackendEnv(env: unknown) {
   };
   pick("SUPABASE_URL", import.meta.env['VITE_SUPABASE_URL']);
   pick("SUPABASE_PUBLISHABLE_KEY", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
+  // Server-only: some hosts hand secrets to the worker as bindings without copying them into
+  // process.env. Copy the backend key across only when the host itself provided it; there is
+  // no fallback, and it never reaches the browser.
+  const serviceKey = bindings["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!pe["SUPABASE_SERVICE_ROLE_KEY"] && typeof serviceKey === "string" && serviceKey) {
+    pe["SUPABASE_SERVICE_ROLE_KEY"] = serviceKey;
+  }
 }
 
 export default {

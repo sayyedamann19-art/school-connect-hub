@@ -37,6 +37,42 @@ async function loadAuthorisation(supabase: {
   return { isAdmin: false, allowedClassKeys };
 }
 
+type Supa = Parameters<typeof loadAuthorisation>[0];
+
+/**
+ * The class chosen in Manage Class, after checking the caller may import into it
+ * (admins: any class; teachers: only classes they are assigned to).
+ */
+async function loadTargetClass(supabase: unknown, classId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const auth = await loadAuthorisation(sb as Supa);
+  const { data: row } = await sb
+    .from("classes")
+    .select("id, name, division, academic_year")
+    .eq("id", classId)
+    .maybeSingle();
+  if (!row) throw new Error("That class doesn't exist or isn't one of yours");
+  const target = row as { id: string; name: string; division: string | null; academic_year: string };
+  if (!auth.isAdmin && !auth.allowedClassKeys!.includes(classKey(target.name, target.division))) {
+    throw new Error("You can only manage your own classes");
+  }
+  return { auth, target };
+}
+
+/** Class header for the Manage Class page. */
+export const getManageClass = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ classId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { target } = await loadTargetClass(context.supabase, data.classId);
+    const { count } = await context.supabase
+      .from("students")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", target.id);
+    return { ...target, studentCount: count ?? 0 };
+  });
+
 /** Everything the browser needs to validate a file before anything is written. */
 export const getImportContext = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -71,6 +107,7 @@ export const runStudentImport = createServerFn({ method: "POST" })
     z
       .object({
         fileName: z.string().trim().max(200),
+        classId: z.string().uuid().optional(),
         rows: z.array(rowSchema).min(1).max(1000),
       })
       .parse(input),
@@ -78,7 +115,17 @@ export const runStudentImport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { isAdmin, allowedClassKeys } = await loadAuthorisation(context.supabase as any);
+    let { isAdmin, allowedClassKeys } = await loadAuthorisation(context.supabase as any);
+    let targetClass: { name: string; division: string | null } | null = null;
+    let academicYear = currentAcademicYear();
+    if (data.classId) {
+      const { target } = await loadTargetClass(context.supabase, data.classId);
+      targetClass = { name: target.name, division: target.division };
+      allowedClassKeys = [classKey(target.name, target.division)];
+      academicYear = target.academic_year;
+      isAdmin = false; // never create other classes from a Manage Class import
+    }
+    void isAdmin;
 
     // Duplicate-GR lookup through the same admin/teacher-only helper as the preview.
     const { data: existingStudents } = await context.supabase.rpc("import_student_lookup");
@@ -94,6 +141,7 @@ export const runStudentImport = createServerFn({ method: "POST" })
     const validated = validateRows(data.rows as unknown as RawRow[], {
       existingByGr,
       allowedClassKeys,
+      targetClass,
     });
 
     const details: {
@@ -131,7 +179,7 @@ export const runStudentImport = createServerFn({ method: "POST" })
       try {
         ({ results } = await runAccountAction<{ results: ImportRowResult[] }>(
           "import_rows",
-          { academicYear: currentAcademicYear(), rows: batch },
+          { academicYear, rows: batch, ...(data.classId ? { classId: data.classId } : {}) },
           { token },
         ));
       } catch (error) {

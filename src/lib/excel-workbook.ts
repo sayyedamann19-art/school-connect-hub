@@ -5,6 +5,7 @@
 import {
   IMPORT_COLUMNS,
   REQUIRED_COLUMNS,
+  STANDARD_CLASSES,
   type ImportColumn,
   type RawRow,
 } from "@/lib/student-import";
@@ -23,8 +24,8 @@ const INSTRUCTIONS: [string, string, string, string][] = [
   ["Student Name", "Required", "Full name as it should appear in the app", "Aarav Sharma"],
   ["Height", "Optional", "Number in centimetres", "132.5"],
   ["Weight", "Optional", "Number in kilograms", "28.4"],
-  ["Class", "Required", "Class name exactly as used by the school", "Class 5"],
-  ["Division", "Optional", "Single division/section label", "A"],
+  ["Class", "Required", "Class 1 to Class 10, chosen from the list. Optional when importing from Manage Class.", "Class 5"],
+  ["Division", "Optional", "Letters or numbers only, e.g. A. Must match the class's division.", "A"],
   ["Parent Name", "Required", "Parent or guardian full name", "Rahul Sharma"],
   [
     "Parent Phone Number",
@@ -42,9 +43,10 @@ const NOTES = [
   "Parents are matched by phone number, so siblings sharing a phone number share one parent login.",
   "Parents sign in with their child's GR Number as the login ID and their phone number as the password.",
   "Rows with errors are never imported — fix them and upload the file again.",
+  "When you download this file from a class's Manage Class page, every row is imported into that class and academic year. Rows for another class are rejected.",
 ];
 
-export async function downloadStudentTemplate() {
+export async function downloadStudentTemplate(target?: { name: string; division: string | null } | null) {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Dawn Breakers School";
@@ -76,8 +78,8 @@ export async function downloadStudentTemplate() {
     "Student Name": "Aarav Sharma",
     Height: 132.5,
     Weight: 28.4,
-    Class: "Class 5",
-    Division: "A",
+    Class: target?.name ?? "Class 5",
+    Division: target ? (target.division ?? "") : "A",
     "Parent Name": "Rahul Sharma",
     "Parent Phone Number": "9876543210",
   });
@@ -98,6 +100,20 @@ export async function downloadStudentTemplate() {
     showErrorMessage: true,
     errorTitle: "Numbers only",
     error: "Enter height in cm and weight in kg as a number.",
+  });
+  const classLetter = sheet.getColumn("Class").letter;
+  (
+    sheet as unknown as {
+      dataValidations: { add: (range: string, validation: unknown) => void };
+    }
+  ).dataValidations.add(`${classLetter}2:${classLetter}501`, {
+    type: "list",
+    allowBlank: true,
+    formulae: [`"${STANDARD_CLASSES.join(",")}"`],
+    showErrorMessage: true,
+    errorStyle: "warning",
+    errorTitle: "Class",
+    error: "Choose Class 1 to Class 10.",
   });
 
 

@@ -93,6 +93,15 @@ export const adminCreateClass = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any);
+    // The unique index treats "no division" as distinct, so check duplicates explicitly.
+    const { data: same } = await context.supabase
+      .from("classes")
+      .select("name, division")
+      .eq("academic_year", data.academicYear)
+      .ilike("name", data.name.replace(/[\\%_]/g, (c) => `\\${c}`));
+    if ((same ?? []).some((c) => (c.division ?? "").toLowerCase() === (data.division ?? "").toLowerCase())) {
+      throw new Error("That class and division already exists for this academic year");
+    }
     const { error } = await context.supabase.from("classes").insert({
       name: data.name,
       division: data.division ?? null,

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Loader2, Pencil, Plus, School } from "lucide-react";
+import { ChevronRight, Loader2, Pencil, Plus, School, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,6 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { STANDARD_CLASSES } from "@/lib/student-import";
 import { adminCreateClass, adminListClasses, adminUpdateClass, type AdminClass } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/classes")({
@@ -79,7 +87,7 @@ function ClassesAdmin() {
         action={
           <Button onClick={() => setDialog({ mode: "create" })}>
             <Plus className="mr-2 size-4" />
-            New class
+            Add new class
           </Button>
         }
       />
@@ -142,15 +150,18 @@ function ClassesAdmin() {
                       </span>
                       <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
                     </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="self-start sm:self-auto"
-                      onClick={() => setDialog({ mode: "edit", row })}
-                    >
-                      <Pencil className="mr-2 size-4" />
-                      Edit
-                    </Button>
+                    <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                      <Button asChild variant="outline" size="sm">
+                        <Link to="/admin/manage-class/$classId" params={{ classId: row.id }}>
+                          <Settings2 className="mr-2 size-4" />
+                          Manage class
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDialog({ mode: "edit", row })}>
+                        <Pencil className="mr-2 size-4" />
+                        Edit
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -208,20 +219,30 @@ function ClassDialog({
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{existing ? "Edit class" : "New class"}</DialogTitle>
+          <DialogTitle>{existing ? "Edit class" : "Add new class"}</DialogTitle>
           <DialogDescription>
-            A class is identified by its name, division and academic year.
+            Choose Class 1 to Class 10. Each class and division can exist only once per academic year.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div className="space-y-2">
-            <Label>Class name</Label>
-            <Input
-              placeholder="Grade 5"
-              value={nameValue}
-              onChange={(event) => setName(event.target.value)}
-            />
+            <Label>Class</Label>
+            <Select value={nameValue} onValueChange={setName}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a class" />
+              </SelectTrigger>
+              <SelectContent>
+                {(STANDARD_CLASSES.includes(nameValue) || !nameValue
+                  ? STANDARD_CLASSES
+                  : [nameValue, ...STANDARD_CLASSES]
+                ).map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Division (optional)</Label>
@@ -246,7 +267,7 @@ function ClassDialog({
             Cancel
           </Button>
           <Button
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !nameValue.trim()}
             onClick={() =>
               mutation.mutate({
                 name: nameValue.trim(),
