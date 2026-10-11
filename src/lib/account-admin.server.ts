@@ -496,7 +496,7 @@ export async function executeAccountAction(
 
 // The Lovable-hosted copy is served on this custom domain. The *.lovable.app address redirects
 // here, and browsers/fetch drop the sign-in header on a cross-site redirect, so call it directly.
-const DEFAULT_SERVICE_URL = "https://dawnbreakerschool.app";
+const DEFAULT_SERVICE_URL = "https://accounts.dawnbreakerschool.app";
 
 /**
  * Entry point for app server functions. Runs locally when this server holds the master key
