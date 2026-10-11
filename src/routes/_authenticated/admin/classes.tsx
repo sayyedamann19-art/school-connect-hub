@@ -1,12 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Loader2, Pencil, Plus, School, Settings2 } from "lucide-react";
+import { ChevronRight, Loader2, Pencil, Plus, School, Settings2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +36,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { STANDARD_CLASSES } from "@/lib/student-import";
-import { adminCreateClass, adminListClasses, adminUpdateClass, type AdminClass } from "@/lib/admin.functions";
+import {
+  adminCreateClass,
+  adminDeleteClass,
+  adminListClasses,
+  adminUpdateClass,
+  type AdminClass,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/classes")({
   head: () => ({
