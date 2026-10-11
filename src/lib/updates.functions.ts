@@ -334,3 +334,61 @@ export const setUpdateNotificationPref = createServerFn({ method: "POST" })
     await syncOwnTopicMembership(context.supabase as never, context.userId, data.notifyUpdates);
     return { ok: true };
   });
+
+/* ---------- Staff inbox (admin <-> teacher notifications) ---------- */
+
+export type InboxUpdate = SchoolUpdate & { sender_is_admin: boolean };
+
+export const listStaffInbox = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<InboxUpdate[]> => {
+    const { staffInboxFilter } = await import("@/lib/unread");
+    const sb = context.supabase;
+    const { data: roleRows, error: roleError } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    if (roleError) throw new Error(roleError.message);
+    const roles = (roleRows ?? []).map((r) => r.role);
+    const role = roles.includes("admin") ? "admin" : roles.includes("teacher") ? "teacher" : null;
+    if (!role) return [];
+    let active = true;
+    if (role === "teacher") {
+      const { data: t } = await sb
+        .from("teachers")
+        .select("is_active, deleted_at")
+        .eq("profile_id", context.userId)
+        .maybeSingle();
+      active = Boolean(t?.is_active && !t.deleted_at);
+      if (!active) return [];
+    }
+    const { data, error } = await sb
+      .from("school_updates")
+      .select(
+        "id, title, body, category, is_published, published_at, first_published_at, created_at, created_by",
+      )
+      .eq("is_published", true)
+      .neq("created_by", context.userId)
+      .order("first_published_at", { ascending: false, nullsFirst: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    const rows = data ?? [];
+    const senders = new Map<string, { name: string; isAdmin: boolean }>();
+    if (rows.length) {
+      const { data: s, error: sErr } = await sb.rpc("get_update_senders", {
+        _update_ids: rows.map((r) => r.id),
+      });
+      if (sErr) throw new Error(sErr.message);
+      for (const x of s ?? []) senders.set(x.update_id, { name: x.sender_name, isAdmin: x.sender_is_admin });
+    }
+    const isAdminMap = new Map(Array.from(senders, ([k, v]) => [k, v.isAdmin]));
+    return staffInboxFilter(rows, isAdminMap, context.userId, role, active).map(
+      ({ created_by: _c, ...row }) => ({
+        ...row,
+        category: normalizeCategory(row.category),
+        sender_name: senders.get(row.id)?.name ?? "School",
+        sender_is_admin: senders.get(row.id)?.isAdmin ?? false,
+        can_manage: false,
+      }),
+    );
+  });
