@@ -768,27 +768,26 @@ export const uploadStudentPhoto = createServerFn({ method: "POST" })
     if (bytes.byteLength === 0) throw new Error("That image could not be read");
     if (bytes.byteLength > PHOTO_MAX_BYTES) throw new Error("Please choose an image under 3 MB");
 
-    // Storage writes and students.photo_path are admin-gated at the database level,
-    // so the privileged client runs only after the relationship check above.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Runs as the signed-in parent: storage rules allow writes only inside this
+    // child's folder, and set_student_photo re-checks the link before saving.
     const path = `students/${data.studentId}/${Date.now()}.${extension}`;
 
-    const upload = await supabaseAdmin.storage
+    const upload = await supabase.storage
       .from(PHOTO_BUCKET)
-      .upload(path, bytes, { contentType: data.contentType, upsert: true });
-    if (upload.error) throw new Error(upload.error.message);
+      .upload(path, bytes, { contentType: data.contentType, upsert: false });
+    if (upload.error) throw new Error("We couldn't save that photo. Please try again.");
 
-    const { error: updateError } = await supabaseAdmin
-      .from("students")
-      .update({ photo_path: path })
-      .eq("id", data.studentId);
+    const { error: updateError } = await supabase.rpc("set_student_photo", {
+      _student_id: data.studentId,
+      _path: path,
+    });
     if (updateError) {
-      await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([path]);
+      await supabase.storage.from(PHOTO_BUCKET).remove([path]);
       throw new Error(updateError.message);
     }
 
     if (previousPath && previousPath !== path) {
-      await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([previousPath]);
+      await supabase.storage.from(PHOTO_BUCKET).remove([previousPath]);
     }
 
     const signed = await signPhotoPaths(supabase, [path]);
@@ -804,13 +803,12 @@ export const removeStudentPhoto = createServerFn({ method: "POST" })
     const previousPath = await assertCanManagePhoto(supabase, data.studentId);
     if (!previousPath) return { removed: false };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("students")
-      .update({ photo_path: null })
-      .eq("id", data.studentId);
+    const { error } = await supabase.rpc("set_student_photo", {
+      _student_id: data.studentId,
+      _path: null as unknown as string,
+    });
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([previousPath]);
+    await supabase.storage.from(PHOTO_BUCKET).remove([previousPath]);
     return { removed: true };
   });
