@@ -113,8 +113,8 @@ function TeacherArea() {
       </div>
 
       <SectionCard
-        title="My updates"
-        description="Notices you write for parents. Published ones appear in every parent's Updates area."
+        title="School updates"
+        description="Published school updates and the notices you write for parents."
         action={
           <Button asChild size="sm" variant="outline">
             <Link to="/teacher/updates">Manage updates</Link>
@@ -124,19 +124,22 @@ function TeacherArea() {
         {updatesQuery.isLoading ? (
           <p className="meta-text">Loading updates…</p>
         ) : updatesQuery.isError ? (
-          <p className="meta-text">We couldn't load your updates. Please try again in a moment.</p>
+          <p className="meta-text">We couldn't load updates. Please try again in a moment.</p>
         ) : (updatesQuery.data ?? []).length === 0 ? (
           <EmptyState
-            title="You haven't written any updates yet"
-            description="Open Manage updates to write your first notice for parents."
+            title="No updates yet"
+            description="Open Manage updates to write a notice for parents."
             icon={<Bell className="size-5" strokeWidth={1.75} />}
           />
         ) : (
           <ul className="divide-y divide-border">
             {(updatesQuery.data ?? []).slice(0, 3).map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <span className="min-w-0 truncate text-sm font-medium text-foreground">
-                  {row.title}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-foreground">
+                    {row.title}
+                  </span>
+                  <span className="meta-text">From {row.sender_name}</span>
                 </span>
                 <StatusBadge tone={row.is_published ? "primary" : "info"}>
                   {row.is_published ? "Published" : "Draft"}
