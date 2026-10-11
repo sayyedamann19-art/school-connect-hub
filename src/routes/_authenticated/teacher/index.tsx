@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { setStudentActive } from "@/lib/students.functions";
 
-
 import { DataTable } from "@/components/common/data-table";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { StatCard } from "@/components/common/stat-card";
@@ -78,7 +77,6 @@ function TeacherArea() {
       }),
   });
 
-
   if (isLoading) return <LoadingCards count={3} />;
 
   if (isError) {
@@ -137,7 +135,9 @@ function TeacherArea() {
           <ul className="divide-y divide-border">
             {(updatesQuery.data ?? []).slice(0, 3).map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <span className="min-w-0 truncate text-sm font-medium text-foreground">{row.title}</span>
+                <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                  {row.title}
+                </span>
                 <StatusBadge tone={row.is_published ? "primary" : "info"}>
                   {row.is_published ? "Published" : "Draft"}
                 </StatusBadge>
@@ -176,7 +176,10 @@ function TeacherArea() {
         )}
       </SectionCard>
 
-      <SectionCard title="Students" description="Open Attendance, Feedback or Character to record for these students.">
+      <SectionCard
+        title="Students"
+        description="Open Attendance, Feedback or Character to record for these students."
+      >
         <DataTable<StudentRow>
           columns={[
             { key: "name", header: "Student", cell: (row) => row.full_name },

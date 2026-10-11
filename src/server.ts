@@ -58,8 +58,8 @@ function ensurePublicBackendEnv(env: unknown) {
     const fromBinding = bindings[key];
     pe[key] = typeof fromBinding === "string" && fromBinding ? fromBinding : fallback;
   };
-  pick("SUPABASE_URL", import.meta.env.VITE_SUPABASE_URL);
-  pick("SUPABASE_PUBLISHABLE_KEY", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  pick("SUPABASE_URL", import.meta.env['VITE_SUPABASE_URL']);
+  pick("SUPABASE_PUBLISHABLE_KEY", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
 }
 
 export default {

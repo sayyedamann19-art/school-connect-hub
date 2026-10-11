@@ -68,9 +68,9 @@ const categories = [
 export function UpdatesManager({ scope }: { scope: Scope }) {
   const fns = api[scope];
   const queryClient = useQueryClient();
-  const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; row: SchoolUpdate } | null>(
-    null,
-  );
+  const [dialog, setDialog] = useState<
+    { mode: "create" } | { mode: "edit"; row: SchoolUpdate } | null
+  >(null);
 
   const updatesQuery = useQuery({ queryKey: [scope, "updates"], queryFn: () => fns.list() });
 
@@ -182,7 +182,12 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
         </div>
       )}
 
-      <UpdateDialog scope={scope} dialog={dialog} onClose={() => setDialog(null)} onSaved={refresh} />
+      <UpdateDialog
+        scope={scope}
+        dialog={dialog}
+        onClose={() => setDialog(null)}
+        onSaved={refresh}
+      />
     </div>
   );
 }

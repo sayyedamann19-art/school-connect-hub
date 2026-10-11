@@ -25,4 +25,3 @@ export const Route = createFileRoute("/_authenticated/teacher/updates")({
     </RoleGate>
   ),
 });
-
