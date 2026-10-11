@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { sendUpdatePushNotifications } from "@/lib/push.functions";
+import { sendUpdatePushNotifications, syncOwnTopicMembership } from "@/lib/push.functions";
 
 export type UpdateCategory = "notice" | "holiday";
 
@@ -307,5 +307,6 @@ export const setUpdateNotificationPref = createServerFn({ method: "POST" })
       .update({ notify_updates: data.notifyUpdates })
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
+    await syncOwnTopicMembership(context.supabase as never, context.userId, data.notifyUpdates);
     return { ok: true };
   });
