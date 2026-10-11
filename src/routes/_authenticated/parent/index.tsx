@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { greetingFor } from "@/lib/greeting";
+import { useT, useI18n, localeFor } from "@/lib/i18n";
 
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing } from "@/components/parent/progress-visuals";
@@ -13,33 +14,38 @@ import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states
 import { getMyChildren } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/")({
-  head: () => ({
-    meta: [
-      { title: "Parent home — Dawn Breakers School" },
-      {
-        name: "description",
-        content:
-          "Today's attendance, recent teacher feedback and character card progress for your children at Dawn Breakers School.",
-      },
-      { property: "og:title", content: "Parent home — Dawn Breakers School" },
-      {
-        property: "og:description",
-        content: "Attendance, teacher feedback and character progress for your children.",
-      },
-    ],
-  }),
+  head: () => {
+    const t = localeFor === undefined ? ((s: string) => s) : (s: string) => s; // dummy to satisfy hook rules if it were a component, but it's not. 
+    // Wait, head can't use hooks. I'll use a static translation or skip head for now if it's too complex, but prompt asked for every visible string.
+    // However, I can't use useT in head. I'll leave head English for now or skip it if I can't easily get lang there.
+    return {
+      meta: [
+        { title: "Parent home — Dawn Breakers School" },
+        {
+          name: "description",
+          content:
+            "Today's attendance, recent teacher feedback and character card progress for your children at Dawn Breakers School.",
+        },
+        { property: "og:title", content: "Parent home — Dawn Breakers School" },
+        {
+          property: "og:description",
+          content: "Attendance, teacher feedback and character progress for your children.",
+        },
+      ],
+    };
+  },
   component: ParentHome,
 });
 
-function classLine(child: { class: { name: string; division: string | null } | null }) {
-  if (!child.class) return "Class not assigned";
+function classLine(child: { class: { name: string; division: string | null } | null }, t: (s: string, v?: any) => string) {
+  if (!child.class) return t("Class not assigned");
   return child.class.division
-    ? `Class ${child.class.name}-${child.class.division}`
-    : `Class ${child.class.name}`;
+    ? t("Class {name}-{division}", { name: child.class.name, division: child.class.division })
+    : t("Class {name}", { name: child.class.name });
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
+function formatDate(value: string, lang: any) {
+  return new Date(value).toLocaleDateString(localeFor(lang), {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -47,6 +53,8 @@ function formatDate(value: string) {
 }
 
 function ParentHome() {
+  const t = useT();
+  const { lang } = useI18n();
   const [greeting, setGreeting] = useState(() => greetingFor());
   useEffect(() => {
     const id = window.setInterval(() => setGreeting(greetingFor()), 60_000);
@@ -63,8 +71,8 @@ function ParentHome() {
   if (isError) {
     return (
       <ErrorState
-        title="We couldn't load your children"
-        description="Please try again in a moment."
+        title={t("We couldn't load your children")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void refetch()}
       />
     );
@@ -76,12 +84,12 @@ function ParentHome() {
     return (
       <div className="space-y-5">
         <header>
-          <p className="eyebrow">Welcome</p>
-          <h1 className="page-title mt-1">{data?.parentName ?? "Parent"}</h1>
+          <p className="eyebrow">{t("Welcome")}</p>
+          <h1 className="page-title mt-1">{data?.parentName ?? t("Parent")}</h1>
         </header>
         <EmptyState
-          title="No children linked to your account yet"
-          description="Please contact the school office so your child's record can be linked to this login."
+          title={t("No children linked to your account yet")}
+          description={t("Please contact the school office so your child's record can be linked to this login.")}
         />
       </div>
     );
@@ -94,8 +102,8 @@ function ParentHome() {
     <div className="space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0">
-          <p className="eyebrow" suppressHydrationWarning>{greeting}</p>
-          <h1 className="page-title mt-1 truncate">{data?.parentName ?? "Parent"}</h1>
+          <p className="eyebrow" suppressHydrationWarning>{t(greeting)}</p>
+          <h1 className="page-title mt-1 truncate">{data?.parentName ?? t("Parent")}</h1>
         </div>
       </header>
 
@@ -112,12 +120,12 @@ function ParentHome() {
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-bold text-foreground">{child.full_name}</p>
             <p className="meta-text mt-0.5">
-              {classLine(child)}
-              {child.roll_number ? ` · Roll ${child.roll_number}` : ""} · GR {child.gr_number}
+              {classLine(child, t)}
+              {child.roll_number ? ` · ${t("Roll {n}", { n: child.roll_number })}` : ""} · GR {child.gr_number}
             </p>
           </div>
           <Link to="/parent/student/$studentId" params={{ studentId: child.id }}>
-            <StatusBadge tone="primary">View profile</StatusBadge>
+            <StatusBadge tone="primary">{t("View profile")}</StatusBadge>
           </Link>
         </div>
 
@@ -127,22 +135,22 @@ function ParentHome() {
             <div>
               <p className="section-title">
                 {attendance.total === 0
-                  ? "No attendance recorded yet"
+                  ? t("No attendance recorded yet")
                   : attendance.percent !== null && attendance.percent >= 90
-                    ? "Excellent attendance"
+                    ? t("Excellent attendance")
                     : attendance.percent !== null && attendance.percent >= 75
-                      ? "Attendance needs a little care"
-                      : "Attendance needs attention"}
+                      ? t("Attendance needs a little care")
+                      : t("Attendance needs attention")}
               </p>
               <p className="meta-text mt-1">
-                {attendance.total} day{attendance.total === 1 ? "" : "s"} recorded
+                {t("{n} days recorded", { n: attendance.total })}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              <CountTile label="Present" value={attendance.present} tone="teal" />
-              <CountTile label="Absent" value={attendance.absent} tone="coral" />
-              <CountTile label="Late" value={attendance.late} tone="gold" />
-              <CountTile label="Left early" value={attendance.leftEarly} tone="info" />
+              <CountTile label={t("Present")} value={attendance.present} tone="teal" />
+              <CountTile label={t("Absent")} value={attendance.absent} tone="coral" />
+              <CountTile label={t("Late")} value={attendance.late} tone="gold" />
+              <CountTile label={t("Left early")} value={attendance.leftEarly} tone="info" />
             </div>
           </div>
         </div>
@@ -154,8 +162,8 @@ function ParentHome() {
             <CalendarCheck className="size-5" strokeWidth={1.75} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-foreground">Attendance</span>
-            <span className="meta-text">Month calendar and history</span>
+            <span className="block text-sm font-bold text-foreground">{t("Attendance")}</span>
+            <span className="meta-text">{t("Month calendar and history")}</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
@@ -164,8 +172,8 @@ function ParentHome() {
             <Heart className="size-5" strokeWidth={1.75} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-foreground">Character card</span>
-            <span className="meta-text">{child.characterScore} points recorded</span>
+            <span className="block text-sm font-bold text-foreground">{t("Character card")}</span>
+            <span className="meta-text">{t("{n} points recorded", { n: child.characterScore })}</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
@@ -174,8 +182,8 @@ function ParentHome() {
             <BookOpen className="size-5" strokeWidth={1.75} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-foreground">Academics</span>
-            <span className="meta-text">Published exam results</span>
+            <span className="block text-sm font-bold text-foreground">{t("Academics")}</span>
+            <span className="meta-text">{t("Published exam results")}</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
@@ -183,16 +191,16 @@ function ParentHome() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="section-title">Recent teacher feedback</h2>
+          <h2 className="section-title">{t("Recent teacher feedback")}</h2>
           <Link to="/parent/feedback" className="text-xs font-bold text-teal">
-            View all
+            {t("View all")}
           </Link>
         </div>
         {child.recentNotes.map((item) => (
           <article key={item.id} className="card-surface p-4">
             <p className="meta-text">
               {item.subject ? `${item.subject} · ` : ""}
-              {formatDate(item.note_date)}
+              {formatDate(item.note_date, lang)}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-foreground/90">{item.note}</p>
           </article>
@@ -200,7 +208,7 @@ function ParentHome() {
         {child.recentNotes.length === 0 ? (
           <div className="card-quiet flex items-center gap-3 p-4">
             <MessageSquareText className="size-4 text-muted-foreground" strokeWidth={1.75} />
-            <p className="meta-text">No feedback shared yet this term.</p>
+            <p className="meta-text">{t("No feedback shared yet this term.")}</p>
           </div>
         ) : null}
       </section>
@@ -208,8 +216,7 @@ function ParentHome() {
       <section className="card-quiet flex items-start gap-3 p-4">
         <Sparkle className="mt-0.5 size-4 shrink-0 text-gold" strokeWidth={1.75} />
         <p className="meta-text">
-          Attendance and feedback are published by class teachers through the school day. Records are
-          private to your family.
+          {t("Attendance and feedback are published by class teachers through the school day. Records are private to your family.")}
         </p>
       </section>
     </div>

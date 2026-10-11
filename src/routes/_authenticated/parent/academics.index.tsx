@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/parent/academics/")({
 });
 
 function AcademicsPage() {
+  const t = useT();
   const [activeId, setActiveId] = useState<string | null>(null);
   const childrenQuery = useQuery({ queryKey: ["parent", "children"], queryFn: () => getMyChildren() });
   const childrenList = childrenQuery.data?.children ?? [];
@@ -36,16 +38,16 @@ function AcademicsPage() {
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;
   if (childrenQuery.isError)
-    return <ErrorState title="We couldn't load academics" description="Please try again in a moment." onRetry={() => void childrenQuery.refetch()} />;
+    return <ErrorState title={t("We couldn't load academics")} description={t("Please try again in a moment.")} onRetry={() => void childrenQuery.refetch()} />;
   if (!child)
-    return <EmptyState title="No children linked to your account yet" description="Please contact the school office." />;
+    return <EmptyState title={t("No children linked to your account yet")} description={t("Please contact the school office.")} />;
 
   const years = academicsQuery.data?.years ?? [];
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Academics</h1>
+        <h1 className="page-title">{t("Academics")}</h1>
         <p className="meta-text mt-1.5">{child.full_name}</p>
       </header>
 
@@ -58,9 +60,9 @@ function AcademicsPage() {
       {academicsQuery.isLoading ? (
         <LoadingCards count={4} />
       ) : academicsQuery.isError ? (
-        <ErrorState title="We couldn't load results" description="Please try again in a moment." onRetry={() => void academicsQuery.refetch()} />
+        <ErrorState title={t("We couldn't load results")} description={t("Please try again in a moment.")} onRetry={() => void academicsQuery.refetch()} />
       ) : years.length === 0 ? (
-        <EmptyState title="No exams yet" icon={<BookOpen className="size-5" strokeWidth={1.75} />} />
+        <EmptyState title={t("No exams yet")} icon={<BookOpen className="size-5" strokeWidth={1.75} />} />
       ) : (
         years.map(({ year, exams }) => (
           <section key={year} className="space-y-3">
@@ -73,12 +75,12 @@ function AcademicsPage() {
                       <span className="block text-sm font-bold text-foreground">{exam.name}</span>
                       <span className="meta-text">
                         {!published
-                          ? "Not Published"
+                          ? t("Not Published")
                           : !summary
-                            ? "No results recorded"
+                            ? t("No results recorded")
                             : summary.percent !== null
-                              ? "View result"
-                              : "Result incomplete — view details"}
+                              ? t("View result")
+                              : t("Result incomplete — view details")}
                       </span>
                     </span>
                     {published && summary?.percent != null ? (

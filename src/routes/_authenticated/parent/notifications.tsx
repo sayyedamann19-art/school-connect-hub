@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BellRing, CalendarHeart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { useMarkUpdatesRead, useParentUpdates } from "@/hooks/use-parent-updates";
@@ -26,20 +27,9 @@ export const Route = createFileRoute("/_authenticated/parent/notifications")({
   component: NotificationsPage,
 });
 
-const categoryMeta: Record<UpdateCategory, { icon: LucideIcon; tone: string; label: string }> = {
-  notice: { icon: BellRing, tone: "bg-primary-soft text-primary", label: "Notice" },
-  holiday: { icon: CalendarHeart, tone: "bg-gold-soft text-warning-foreground", label: "Holiday" },
-};
-
-const filters = [
-  { value: "all", label: "All" },
-  { value: "notice", label: "Notice" },
-  { value: "holiday", label: "Holiday" },
-] as const;
-
-function formatWhen(value: string | null) {
+function formatWhen(lang: string, value: string | null) {
   if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString(localeFor(lang as any), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -47,9 +37,23 @@ function formatWhen(value: string | null) {
 }
 
 function NotificationsPage() {
+  const t = useT();
+  const { lang } = useI18n();
   const { updates: query, readSet, unread } = useParentUpdates();
   const { data, isLoading, isError, refetch } = query;
   const markRead = useMarkUpdatesRead();
+  
+  const categoryMeta: Record<UpdateCategory, { icon: LucideIcon; tone: string; label: string }> = useMemo(() => ({
+    notice: { icon: BellRing, tone: "bg-primary-soft text-primary", label: t("Notice") },
+    holiday: { icon: CalendarHeart, tone: "bg-gold-soft text-warning-foreground", label: t("Holiday") },
+  }), [t]);
+
+  const filters = useMemo(() => [
+    { value: "all", label: t("All") },
+    { value: "notice", label: t("Notice") },
+    { value: "holiday", label: t("Holiday") },
+  ] as const, [t]);
+
   const [filter, setFilter] = useState<(typeof filters)[number]["value"]>("all");
   // Remember which were unread when the page opened, so the "New" tag stays visible this visit.
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
@@ -68,8 +72,8 @@ function NotificationsPage() {
   if (isError) {
     return (
       <ErrorState
-        title="We couldn't load updates"
-        description="Please try again in a moment."
+        title={t("We couldn't load updates")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void refetch()}
       />
     );
@@ -82,16 +86,18 @@ function NotificationsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Updates</h1>
+        <h1 className="page-title">{t("Updates")}</h1>
         <p className="meta-text mt-1.5">
           {all.length === 0
-            ? "No updates published yet"
-            : `${all.length} update${all.length === 1 ? "" : "s"} from the school`}
+            ? t("No updates published yet")
+            : all.length === 1
+              ? t("{n} update from the school", { n: all.length })
+              : t("{n} updates from the school", { n: all.length })}
         </p>
       </header>
 
       {all.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter updates">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("Filter updates")}>
           {filters.map((item) => (
             <button
               key={item.value}
@@ -114,11 +120,11 @@ function NotificationsPage() {
 
       {updates.length === 0 ? (
         <EmptyState
-          title={all.length === 0 ? "No updates yet" : "Nothing in this category"}
+          title={all.length === 0 ? t("No updates yet") : t("Nothing in this category")}
           description={
             all.length === 0
-              ? "School notices will appear here as soon as the school publishes them."
-              : "Try another filter to see other updates."
+              ? t("School notices will appear here as soon as the school publishes them.")
+              : t("Try another filter to see other updates.")
           }
           icon={<BellRing className="size-5" strokeWidth={1.75} />}
         />
@@ -141,7 +147,7 @@ function NotificationsPage() {
                     {item.title}
                     {newIds.has(item.id) ? (
                       <span className="rounded-full bg-danger px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-danger-foreground">
-                        New
+                        {t("New")}
                       </span>
                     ) : null}
                   </p>
@@ -149,8 +155,8 @@ function NotificationsPage() {
                     {item.body}
                   </p>
                   <p className="meta-text mt-2">
-                    {meta.label} · From {item.sender_name} ·{" "}
-                    {formatWhen(item.first_published_at ?? item.published_at ?? item.created_at)}
+                    {meta.label} · {t("From {name}", { name: item.sender_name })} ·{" "}
+                    {formatWhen(lang, item.first_published_at ?? item.published_at ?? item.created_at)}
                   </p>
                 </div>
               </article>

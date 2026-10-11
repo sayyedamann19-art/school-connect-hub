@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNotifyPref, useParentUpdates } from "@/hooks/use-parent-updates";
 import { useStaffUpdates } from "@/hooks/use-staff-updates";
 import { normalizeCategory } from "@/lib/updates.functions";
+import { useT } from "@/lib/i18n";
 
 const PARENT_KEY = "dawn-breakers:update-toasts-shown";
 
@@ -25,6 +26,7 @@ function saveShown(SHOWN_KEY: string, ids: Set<string>) {
  * Each update is announced at most once per device (edits and re-publishing keep the same id).
  */
 export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) {
+  const t = useT();
   const navigate = useNavigate();
   const pref = useNotifyPref();
   const parentData = useParentUpdates(!staff);
@@ -60,15 +62,15 @@ export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) 
       void navigate({ to: staff ? `/${staff}/updates` : "/parent/notifications" } as never);
     const show = fresh.slice(0, 3);
     for (const u of show) {
-      const label = normalizeCategory(u.category) === "holiday" ? "Holiday" : "Notice";
-      toast(`${label}: ${u.title}`, {
+      const label = t(normalizeCategory(u.category) === "holiday" ? "Holiday" : "Notice");
+      toast(t("{label}: {title}", { label, title: u.title }), {
         description: staff
-          ? `From ${u.sender_name}`
+          ? t("From {sender}", { sender: u.sender_name })
           : u.body.length > 90
             ? `${u.body.slice(0, 90)}…`
             : u.body,
         duration: 10_000,
-        action: { label: "Open", onClick: open },
+        action: { label: t("Open"), onClick: open },
       });
       if (
         document.visibilityState === "hidden" &&
@@ -76,7 +78,7 @@ export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) 
         Notification.permission === "granted"
       ) {
         try {
-          const n = new Notification(`${label}: ${u.title}`, { body: u.body, tag: u.id });
+          const n = new Notification(t("{label}: {title}", { label, title: u.title }), { body: u.body, tag: u.id });
           n.onclick = () => {
             window.focus();
             open();
@@ -87,11 +89,11 @@ export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) 
       }
     }
     if (fresh.length > show.length) {
-      toast(`${fresh.length - show.length} more new updates`, {
-        action: { label: "View all", onClick: open },
+      toast(t("{n} more new updates", { n: fresh.length - show.length }), {
+        action: { label: t("View all"), onClick: open },
       });
     }
-  }, [unread, updates.isSuccess, updates.data, pref.isSuccess, pref.data, navigate, staff, SHOWN_KEY]);
+  }, [unread, updates.isSuccess, updates.data, pref.isSuccess, pref.data, navigate, staff, SHOWN_KEY, t]);
 
   return null;
 }

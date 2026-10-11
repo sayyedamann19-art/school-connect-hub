@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Award, Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
@@ -30,13 +31,15 @@ export const Route = createFileRoute("/_authenticated/parent/character")({
   component: CharacterPage,
 });
 
-function formatDate(value: string) {
+function formatDate(lang: string, value: string) {
   const parsed = new Date(`${value}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return parsed.toLocaleDateString(localeFor(lang as any), { day: "numeric", month: "short", year: "numeric" });
 }
 
 function CharacterPage() {
+  const t = useT();
+  const { lang } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const childrenQuery = useQuery({
@@ -59,8 +62,8 @@ function CharacterPage() {
   if (childrenQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load the character card"
-        description="Please try again in a moment."
+        title={t("We couldn't load the character card")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void childrenQuery.refetch()}
       />
     );
@@ -69,8 +72,8 @@ function CharacterPage() {
   if (!child) {
     return (
       <EmptyState
-        title="No children linked to your account yet"
-        description="Please contact the school office so your child's record can be linked to this login."
+        title={t("No children linked to your account yet")}
+        description={t("Please contact the school office so your child's record can be linked to this login.")}
       />
     );
   }
@@ -87,8 +90,8 @@ function CharacterPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Character card</h1>
-        <p className="meta-text mt-1.5">{child.full_name} · Morality Before Materiality</p>
+        <h1 className="page-title">{t("Character card")}</h1>
+        <p className="meta-text mt-1.5">{child.full_name} · {t("Morality Before Materiality")}</p>
       </header>
 
       {childrenList.length > 1 ? (
@@ -101,34 +104,34 @@ function CharacterPage() {
 
       <section className="card-surface overflow-hidden bg-primary p-5 text-primary-foreground">
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-gold">
-          Current score
+          {t("Current score")}
         </p>
         <p className="metric-number mt-2">{score}</p>
         <div className="mt-4 flex gap-2.5">
           <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/12 px-3 py-1 text-xs font-semibold">
             <Plus className="size-3.5" strokeWidth={2.25} />
-            {positive} earned
+            {t("{n} earned", { n: positive })}
           </span>
           <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/12 px-3 py-1 text-xs font-semibold">
             <Minus className="size-3.5" strokeWidth={2.25} />
-            {negative} deducted
+            {t("{n} deducted", { n: negative })}
           </span>
         </div>
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title">Point history</h2>
+        <h2 className="section-title">{t("Point history")}</h2>
         {pointsQuery.isLoading ? (
           <LoadingCards count={2} />
         ) : pointsQuery.isError ? (
           <ErrorState
-            title="We couldn't load the point history"
+            title={t("We couldn't load the point history")}
             onRetry={() => void pointsQuery.refetch()}
           />
         ) : entries.length === 0 ? (
           <EmptyState
-            title="No character points yet"
-            description="Points recorded by your child's teachers will appear here."
+            title={t("No character points yet")}
+            description={t("Points recorded by your child's teachers will appear here.")}
             icon={<Award className="size-5" strokeWidth={1.75} />}
           />
         ) : (
@@ -145,14 +148,14 @@ function CharacterPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge tone={entry.points >= 0 ? "success" : "danger"}>
-                    {entry.points >= 0 ? "Earned" : "Deducted"}
+                    {entry.points >= 0 ? t("Earned") : t("Deducted")}
                   </StatusBadge>
                 </div>
                 {entry.reason ? (
                   <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{entry.reason}</p>
                 ) : null}
                 <p className="meta-text mt-2">
-                  {entry.teacher_name} · {formatDate(entry.awarded_on)}
+                  {entry.teacher_name} · {formatDate(lang, entry.awarded_on)}
                 </p>
               </div>
             </article>

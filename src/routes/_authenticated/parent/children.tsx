@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 import { StudentAvatar } from "@/components/common/student-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/parent/children")({
 });
 
 function ChildrenPage() {
+  const t = useT();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["parent", "children"],
     queryFn: () => getMyChildren(),
@@ -36,8 +38,8 @@ function ChildrenPage() {
   if (isError) {
     return (
       <ErrorState
-        title="We couldn't load your children"
-        description="Please try again in a moment."
+        title={t("We couldn't load your children")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void refetch()}
       />
     );
@@ -48,16 +50,16 @@ function ChildrenPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="page-title">My children</h1>
+        <h1 className="page-title">{t("My children")}</h1>
         <p className="meta-text mt-1.5">
-          {childrenList.length} student{childrenList.length === 1 ? "" : "s"} linked to this account.
+          {t("{n} students linked to this account", { n: childrenList.length })}
         </p>
       </header>
 
       {childrenList.length === 0 ? (
         <EmptyState
-          title="No children linked to your account yet"
-          description="Please contact the school office so your child's record can be linked to this login."
+          title={t("No children linked to your account yet")}
+          description={t("Please contact the school office so your child's record can be linked to this login.")}
         />
       ) : (
         <div className="space-y-3">
@@ -78,18 +80,20 @@ function ChildrenPage() {
                 <p className="truncate text-sm font-bold text-foreground">{child.full_name}</p>
                 <p className="meta-text mt-0.5">
                   {child.class
-                    ? `Class ${child.class.name}${child.class.division ? `-${child.class.division}` : ""}`
-                    : "Class not assigned"}
-                  {child.roll_number ? ` · Roll ${child.roll_number}` : ""} · GR {child.gr_number}
+                    ? child.class.division
+                      ? t("Class {name}-{division}", { name: child.class.name, division: child.class.division })
+                      : t("Class {name}", { name: child.class.name })
+                    : t("Class not assigned")}
+                  {child.roll_number ? ` · ${t("Roll {n}", { n: child.roll_number })}` : ""} · GR {child.gr_number}
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-4">
                   <span className="text-xs font-bold text-teal">
                     {child.attendance.percent === null ? "—" : `${child.attendance.percent}%`}{" "}
-                    <span className="font-medium text-muted-foreground">attendance</span>
+                    <span className="font-medium text-muted-foreground">{t("attendance")}</span>
                   </span>
                   <span className="text-xs font-bold text-warning-foreground">
                     {child.characterScore}{" "}
-                    <span className="font-medium text-muted-foreground">character points</span>
+                    <span className="font-medium text-muted-foreground">{t("character points")}</span>
                   </span>
                 </div>
               </div>
@@ -100,7 +104,7 @@ function ChildrenPage() {
       )}
 
       <p className="meta-text">
-        Siblings are grouped under one login. Contact the school office if a child is missing.
+        {t("Siblings are grouped under one login. Contact the school office if a child is missing.")}
       </p>
     </div>
   );

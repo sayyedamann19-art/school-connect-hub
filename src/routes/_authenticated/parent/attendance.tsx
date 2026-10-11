@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { CountTile } from "@/components/common/stat-card";
 import { EmptyState, ErrorState, LoadingCards, LoadingRows } from "@/components/common/states";
@@ -40,29 +41,6 @@ const dayTone: Record<Status, string> = {
   other: "bg-muted text-muted-foreground",
 };
 
-const legend: { state: Status; label: string }[] = [
-  { state: "present", label: "Present" },
-  { state: "absent", label: "Absent" },
-  { state: "late", label: "Late" },
-  { state: "left_early", label: "Left early" },
-  { state: "other", label: "Other" },
-];
-
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
 /** Attendance percentage mirrors the app's existing rule: present / total records. */
 function percentOf(records: AttendanceRecord[]): number | null {
   if (records.length === 0) return null;
@@ -74,15 +52,31 @@ function monthKey(date: string) {
   return date.slice(0, 7);
 }
 
-function verdictFor(percent: number | null) {
-  if (percent === null) return "No attendance recorded yet";
-  if (percent >= 95) return "Outstanding attendance";
-  if (percent >= 90) return "Excellent attendance";
-  if (percent >= 75) return "Attendance needs attention";
-  return "Attendance is a concern";
+function verdictFor(t: (s: string) => string, percent: number | null) {
+  if (percent === null) return t("No attendance recorded yet");
+  if (percent >= 95) return t("Outstanding attendance");
+  if (percent >= 90) return t("Excellent attendance");
+  if (percent >= 75) return t("Attendance needs attention");
+  return t("Attendance is a concern");
 }
 
 function AttendancePage() {
+  const t = useT();
+  const { lang } = useI18n();
+
+  const legend: { state: Status; label: string }[] = useMemo(() => [
+    { state: "present", label: t("Present") },
+    { state: "absent", label: t("Absent") },
+    { state: "late", label: t("Late") },
+    { state: "left_early", label: t("Left early") },
+    { state: "other", label: t("Other") },
+  ], [t]);
+
+  const monthNames = useMemo(() => [
+    t("January"), t("February"), t("March"), t("April"), t("May"), t("June"),
+    t("July"), t("August"), t("September"), t("October"), t("November"), t("December"),
+  ], [t]);
+
   const childrenQuery = useQuery({
     queryKey: ["parent", "children"],
     queryFn: () => getMyChildren(),
@@ -154,7 +148,7 @@ function AttendancePage() {
       })),
       percent: percentOf(byMonth.get(viewKey) ?? []),
     };
-  }, [byMonth, viewKey]);
+  }, [byMonth, viewKey, monthNames]);
 
   const trend = useMemo(
     () =>
@@ -165,7 +159,7 @@ function AttendancePage() {
           value: percentOf(byMonth.get(key) ?? []) ?? 0,
         };
       }),
-    [byMonth, monthKeys],
+    [byMonth, monthKeys, monthNames],
   );
 
   const monthly = useMemo(
@@ -178,7 +172,7 @@ function AttendancePage() {
           percent: percentOf(byMonth.get(key) ?? []) ?? 0,
         };
       }),
-    [byMonth, monthKeys],
+    [byMonth, monthKeys, monthNames],
   );
 
   if (childrenQuery.isLoading) return <LoadingCards count={1} />;
@@ -186,8 +180,8 @@ function AttendancePage() {
   if (childrenQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load your children"
-        description="Please try again in a moment."
+        title={t("We couldn't load your children")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void childrenQuery.refetch()}
       />
     );
@@ -196,8 +190,8 @@ function AttendancePage() {
   if (!activeChild) {
     return (
       <EmptyState
-        title="No children linked to your account yet"
-        description="Please contact the school office so your child's record can be linked to this login."
+        title={t("No children linked to your account yet")}
+        description={t("Please contact the school office so your child's record can be linked to this login.")}
       />
     );
   }
@@ -205,11 +199,11 @@ function AttendancePage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Attendance</h1>
+        <h1 className="page-title">{t("Attendance")}</h1>
         <p className="meta-text mt-1.5">
           {activeChild.full_name}
           {activeChild.class
-            ? ` · Class ${activeChild.class.name}${activeChild.class.division ? `-${activeChild.class.division}` : ""}`
+            ? t(" · Class {name}", { name: activeChild.class.division ? `${activeChild.class.name}-${activeChild.class.division}` : activeChild.class.name })
             : ""}
         </p>
       </header>
@@ -231,28 +225,28 @@ function AttendancePage() {
         <LoadingRows count={6} />
       ) : attendanceQuery.isError ? (
         <ErrorState
-          title="We couldn't load attendance"
-          description="Please try again in a moment."
+          title={t("We couldn't load attendance")}
+          description={t("Please try again in a moment.")}
           onRetry={() => void attendanceQuery.refetch()}
         />
       ) : stats.total === 0 ? (
         <EmptyState
-          title="No attendance recorded yet"
-          description={`The school hasn't marked any attendance for ${activeChild.full_name} so far.`}
+          title={t("No attendance recorded yet")}
+          description={t("The school hasn't marked any attendance for {name} so far.", { name: activeChild.full_name })}
         />
       ) : (
         <>
           <section className="card-surface flex flex-col items-center gap-5 p-5 sm:flex-row sm:gap-7">
             <AttendanceRing percent={stats.percent ?? 0} />
             <div className="w-full space-y-3">
-              <p className="section-title">{verdictFor(stats.percent)}</p>
-              <p className="meta-text">{stats.total} records marked</p>
+              <p className="section-title">{verdictFor(t, stats.percent)}</p>
+              <p className="meta-text">{t("{n} records marked", { n: stats.total })}</p>
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
-                <CountTile label="Present" value={stats.present} tone="teal" />
-                <CountTile label="Absent" value={stats.absent} tone="coral" />
-                <CountTile label="Late" value={stats.late} tone="gold" />
-                <CountTile label="Left early" value={stats.leftEarly} tone="info" />
-                <CountTile label="Other" value={stats.other} tone="neutral" />
+                <CountTile label={t("Present")} value={stats.present} tone="teal" />
+                <CountTile label={t("Absent")} value={stats.absent} tone="coral" />
+                <CountTile label={t("Late")} value={stats.late} tone="gold" />
+                <CountTile label={t("Left early")} value={stats.leftEarly} tone="info" />
+                <CountTile label={t("Other")} value={stats.other} tone="neutral" />
               </div>
             </div>
           </section>
@@ -264,7 +258,7 @@ function AttendancePage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Previous month"
+                    aria-label={t("Previous month")}
                     disabled={viewIndex === 0}
                     onClick={() => setMonthOffset((value) => value - 1)}
                   >
@@ -274,7 +268,7 @@ function AttendancePage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Next month"
+                    aria-label={t("Next month")}
                     disabled={viewIndex >= monthKeys.length - 1}
                     onClick={() => setMonthOffset((value) => value + 1)}
                   >
@@ -294,7 +288,7 @@ function AttendancePage() {
               </div>
 
               <div className="mt-4 grid grid-cols-7 gap-1.5 text-center">
-                {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                {[t("S"), t("M"), t("T"), t("W"), t("T"), t("F"), t("S")].map((day, index) => (
                   <span key={`${day}-${index}`} className="eyebrow py-1">
                     {day}
                   </span>
@@ -317,15 +311,15 @@ function AttendancePage() {
 
               <p className="meta-text mt-3">
                 {calendar.percent === null
-                  ? "No records marked this month."
-                  : `${calendar.percent}% present this month. Days without a mark are school holidays or not yet recorded.`}
+                  ? t("No records marked this month.")
+                  : t("{percent}% present this month. Days without a mark are school holidays or not yet recorded.", { percent: calendar.percent })}
               </p>
             </section>
           ) : null}
 
           {trend.length > 1 ? (
             <section className="card-surface p-5">
-              <h2 className="section-title">Recent month trend</h2>
+              <h2 className="section-title">{t("Recent month trend")}</h2>
               <div className="mt-4">
                 <TrendChart data={trend} />
               </div>
@@ -333,7 +327,7 @@ function AttendancePage() {
           ) : null}
 
           <section className="card-surface overflow-hidden">
-            <h2 className="section-title border-b border-border px-5 py-4">Monthly history</h2>
+            <h2 className="section-title border-b border-border px-5 py-4">{t("Monthly history")}</h2>
             <ul className="divide-y divide-border">
               {monthly.map((row) => (
                 <li key={row.key} className="flex items-center justify-between gap-4 px-5 py-3.5">
