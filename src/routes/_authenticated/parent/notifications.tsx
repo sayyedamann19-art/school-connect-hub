@@ -149,7 +149,7 @@ function NotificationsPage() {
                     {item.body}
                   </p>
                   <p className="meta-text mt-2">
-                    {meta.label} ·{" "}
+                    {meta.label} · From {item.sender_name} ·{" "}
                     {formatWhen(item.first_published_at ?? item.published_at ?? item.created_at)}
                   </p>
                 </div>

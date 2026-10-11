@@ -806,6 +806,14 @@ export type Database = {
           teacher_name: string
         }[]
       }
+      get_update_senders: {
+        Args: { _update_ids: string[] }
+        Returns: {
+          sender_is_admin: boolean
+          sender_name: string
+          update_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

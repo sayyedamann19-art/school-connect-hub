@@ -95,6 +95,8 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
     onSuccess: () => {
       toast.success("Update deleted");
       refresh();
+      void queryClient.invalidateQueries({ queryKey: ["teacher", "updates"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "updates"] });
     },
     onError: (error) =>
       toast.error("Couldn't delete the update", {
@@ -109,7 +111,7 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
         description={
           scope === "admin"
             ? "Published updates appear for every parent in the Updates area. Drafts stay private."
-            : "Updates you publish appear for every parent in the Updates area. You can manage only the updates you write."
+            : "You see every published school update. You can edit, publish or delete only the updates you write."
         }
         action={
           <Button onClick={() => setDialog({ mode: "create" })} className="shrink-0">
@@ -129,7 +131,7 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
         />
       ) : (updatesQuery.data ?? []).length === 0 ? (
         <EmptyState
-          title={scope === "admin" ? "No updates yet" : "You haven't written any updates yet"}
+          title="No updates yet"
           description="Write your first notice so parents have something to read."
           icon={<Bell className="size-5" strokeWidth={1.75} />}
         />
@@ -141,40 +143,48 @@ export function UpdatesManager({ scope }: { scope: Scope }) {
               title={row.title}
               description={`${categories.find((item) => item.value === row.category)?.label ?? row.category} · ${
                 row.is_published ? "Published" : "Draft"
-              }`}
+              } · From ${row.sender_name}`}
               action={
-                <div className="flex items-center gap-2">
-                  <span className="meta-text">{row.is_published ? "Live" : "Hidden"}</span>
-                  <Switch
-                    checked={row.is_published}
-                    onCheckedChange={(checked) =>
-                      publishMutation.mutate({ updateId: row.id, isPublished: checked })
-                    }
-                  />
-                </div>
+                !row.can_manage ? null : (
+                  <div className="flex items-center gap-2">
+                    <span className="meta-text">{row.is_published ? "Live" : "Hidden"}</span>
+                    <Switch
+                      checked={row.is_published}
+                      onCheckedChange={(checked) =>
+                        publishMutation.mutate({ updateId: row.id, isPublished: checked })
+                      }
+                    />
+                  </div>
+                )
               }
             >
               <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
                 {row.body}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setDialog({ mode: "edit", row })}>
-                  <Pencil className="mr-2 size-4" />
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (window.confirm("Delete this update permanently?")) {
-                      deleteMutation.mutate(row.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="mr-2 size-4" />
-                  Delete
-                </Button>
-              </div>
+              {row.can_manage ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDialog({ mode: "edit", row })}
+                  >
+                    <Pencil className="mr-2 size-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (window.confirm("Delete this update permanently?")) {
+                        deleteMutation.mutate(row.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete
+                  </Button>
+                </div>
+              ) : null}
             </SectionCard>
           ))}
         </div>
