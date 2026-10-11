@@ -82,6 +82,12 @@ const schemas = {
     parentName: z.string().trim().max(120).optional(),
     parentPhone: phone.optional(),
   }),
+  create_parent: z.object({
+    fullName: z.string().trim().min(2).max(120),
+    phone,
+    relationship: z.string().trim().max(30).optional(),
+    studentIds: z.array(z.string().uuid()).min(1).max(10),
+  }),
 } satisfies Record<AccountAction, z.ZodTypeAny>;
 
 export type AccountPayload<A extends AccountAction> = z.input<(typeof schemas)[A]>;
@@ -450,6 +456,39 @@ export async function executeAccountAction(
       }
       if (Object.keys(patch).length) await sb.from("profiles").update(patch).eq("id", link.parent_id);
       return { ok: true, changed: true };
+    }
+    case "create_parent": {
+      const d = parsed.data as z.infer<typeof schemas.create_parent>;
+      const { data: clash } = await sb
+        .from("profiles")
+        .select("id")
+        .or(`phone.eq.${d.phone},login_alias.eq.${parentAlias(d.phone)}`)
+        .limit(1)
+        .maybeSingle();
+      if (clash) {
+        throw new AccountError("A login with this phone number already exists — use Link a student on that parent instead", 409);
+      }
+      const ids = [...new Set(d.studentIds)];
+      const { data: found } = await sb.from("students").select("id").in("id", ids);
+      if ((found ?? []).length !== ids.length) throw new AccountError("One of the selected students no longer exists", 404);
+      const parentId = await ensureParent(sb, d.phone, d.fullName);
+      for (const studentId of ids) {
+        const { data: link } = await sb
+          .from("parent_students")
+          .select("id")
+          .eq("student_id", studentId)
+          .eq("parent_id", parentId)
+          .maybeSingle();
+        if (!link) {
+          const { error } = await sb.from("parent_students").insert({
+            student_id: studentId,
+            parent_id: parentId,
+            ...(d.relationship ? { relationship: d.relationship } : {}),
+          });
+          if (error) throw new AccountError("Parent created, but a child couldn't be linked");
+        }
+      }
+      return { ok: true, parentId };
     }
   }
   throw new AccountError("Unknown action");

@@ -1,9 +1,10 @@
-import { getRequest } from "@tanstack/react-start/server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { TablesUpdate } from "@/integrations/supabase/types";
+import { isManageableParent, type Role } from "@/lib/account-rules";
+import { parentAlias } from "@/lib/parent-domain";
 
 const optionalText = (max: number) =>
   z
@@ -141,14 +142,47 @@ export const updateStudent = createServerFn({ method: "POST" })
     const { error } = await supabase.from("students").update(patch).eq("id", data.studentId);
     if (error) throw new Error(error.message);
 
-    // Parent contact details are ownership-adjacent, so admins only.
+    // Parent contact details are ownership-adjacent, so admins only. Handled with the admin's
+    // own session (database rules allow admins to edit profiles), so ordinary edits never need
+    // the privileged account service. Only values that actually changed are written.
     if (isAdmin && (data.parentName !== undefined || data.parentPhone !== undefined)) {
-      const { runAccountAction, bearerFrom } = await import("@/lib/account-admin.server");
-      await runAccountAction("change_parent_contact", {
-        studentId: data.studentId,
-        parentName: data.parentName,
-        parentPhone: data.parentPhone,
-      }, { token: bearerFrom(getRequest()) });
+      const { data: link } = await supabase
+        .from("parent_students")
+        .select("parent_id, parent:profiles(full_name, phone)")
+        .eq("student_id", data.studentId)
+        .order("created_at")
+        .limit(1)
+        .maybeSingle();
+      if (link) {
+        const patch: TablesUpdate<"profiles"> = {};
+        const name = data.parentName ?? null;
+        if (name && name !== (link.parent?.full_name ?? "")) patch.full_name = name;
+        if (data.parentPhone && data.parentPhone !== (link.parent?.phone ?? "")) {
+          patch.phone = data.parentPhone;
+        }
+        if (Object.keys(patch).length) {
+          const { data: roleRows } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", link.parent_id);
+          const roles = (roleRows ?? []).map((r) => r.role as Role);
+          if (!isManageableParent(roles)) {
+            throw new Error("Student saved, but the linked parent is a staff account and wasn't changed");
+          }
+          if (patch.phone) {
+            const { data: clash } = await supabase
+              .from("profiles")
+              .select("id")
+              .neq("id", link.parent_id)
+              .or(`phone.eq.${patch.phone},login_alias.eq.${parentAlias(patch.phone)}`)
+              .limit(1)
+              .maybeSingle();
+            if (clash) throw new Error("Student saved, but that parent phone number is already used by another account");
+          }
+          const { error: pErr } = await supabase.from("profiles").update(patch).eq("id", link.parent_id);
+          if (pErr) throw new Error("Student saved, but the parent details couldn't be updated");
+        }
+      }
     }
 
     return { ok: true, updatedBy: userId };

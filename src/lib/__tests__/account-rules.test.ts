@@ -48,3 +48,11 @@ describe("account service permissions", () => {
     expect(exactIlike("12%_")).toBe("12\\%\\_");
   });
 });
+
+import { soleParentStudents as sole } from "@/lib/account-rules";
+describe("deleting a parent", () => {
+  it("flags only students with no other parent", () => {
+    const r = sole([{ id: "a", otherParents: 0 }, { id: "b", otherParents: 1 }]);
+    expect(r.map((s) => s.id)).toEqual(["a"]);
+  });
+});
