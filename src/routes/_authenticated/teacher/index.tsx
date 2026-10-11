@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { GraduationCap, Users } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bell, GraduationCap, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { teacherListUpdates } from "@/lib/updates.functions";
 import { toast } from "sonner";
 
 import { Switch } from "@/components/ui/switch";
@@ -51,6 +54,11 @@ function TeacherArea() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["teacher", "overview"],
     queryFn: () => getTeacherOverview(),
+  });
+
+  const updatesQuery = useQuery({
+    queryKey: ["teacher", "updates"],
+    queryFn: () => teacherListUpdates(),
   });
 
   const activeMutation = useMutation({
@@ -106,6 +114,39 @@ function TeacherArea() {
         <StatCard label="Assigned classes" value={assignments.length} icon={GraduationCap} />
         <StatCard label="Students in scope" value={students.length} icon={Users} />
       </div>
+
+      <SectionCard
+        title="My updates"
+        description="Notices you write for parents. Published ones appear in every parent's Updates area."
+        action={
+          <Button asChild size="sm" variant="outline">
+            <Link to="/teacher/updates">Manage updates</Link>
+          </Button>
+        }
+      >
+        {updatesQuery.isLoading ? (
+          <p className="meta-text">Loading updates…</p>
+        ) : updatesQuery.isError ? (
+          <p className="meta-text">We couldn't load your updates. Please try again in a moment.</p>
+        ) : (updatesQuery.data ?? []).length === 0 ? (
+          <EmptyState
+            title="You haven't written any updates yet"
+            description="Open Manage updates to write your first notice for parents."
+            icon={<Bell className="size-5" strokeWidth={1.75} />}
+          />
+        ) : (
+          <ul className="divide-y divide-border">
+            {(updatesQuery.data ?? []).slice(0, 3).map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <span className="min-w-0 truncate text-sm font-medium text-foreground">{row.title}</span>
+                <StatusBadge tone={row.is_published ? "primary" : "info"}>
+                  {row.is_published ? "Published" : "Draft"}
+                </StatusBadge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
 
       <SectionCard title="My class assignments">
         {assignments.length === 0 ? (
