@@ -92,6 +92,7 @@ function ClassesAdmin() {
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; row: AdminClass } | null>(
     null,
   );
+  const [deleteTarget, setDeleteTarget] = useState<AdminClass | null>(null);
 
   const classesQuery = useQuery({ queryKey: ["admin", "classes"], queryFn: () => adminListClasses() });
 
@@ -176,6 +177,15 @@ function ClassesAdmin() {
                       <Button variant="ghost" size="sm" onClick={() => setDialog({ mode: "edit", row })}>
                         <Pencil className="mr-2 size-4" />
                         Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(row)}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Delete
                       </Button>
                     </div>
                   </li>
