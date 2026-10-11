@@ -155,7 +155,7 @@ function AdminArea() {
                   <div className="flex items-center justify-between gap-3">
                     <p className="truncate text-sm font-semibold text-foreground">{update.title}</p>
                     <span className="meta-text shrink-0">
-                      {update.is_published ? "Published" : "Draft"}
+                      {update.is_published ? "Published" : "Draft"} · {update.sender_name}
                     </span>
                   </div>
                   <p className="meta-text mt-0.5 line-clamp-1">{update.body}</p>
