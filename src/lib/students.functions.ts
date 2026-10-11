@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { TablesUpdate } from "@/integrations/supabase/types";
-import { parentAlias } from "@/lib/parent-domain";
 
 const optionalText = (max: number) =>
   z

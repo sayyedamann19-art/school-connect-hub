@@ -4,7 +4,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { parentAlias } from "@/lib/parent-domain";
 
 /** Every function here is admin-only; the role is re-checked server-side. */
 async function assertAdmin(supabase: { rpc: (name: "is_admin") => Promise<{ data: unknown }> }) {

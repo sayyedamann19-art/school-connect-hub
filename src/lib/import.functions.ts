@@ -6,7 +6,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { classKey, validateRows, type ImportContext, type RawRow } from "@/lib/student-import";
 import { IMPORT_COLUMNS } from "@/lib/student-import";
-import { parentAlias } from "@/lib/parent-domain";
 
 
 function currentAcademicYear() {
