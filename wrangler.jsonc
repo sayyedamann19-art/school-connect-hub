@@ -6,6 +6,6 @@
     "SUPABASE_URL": "https://c--e2d9199d-8106-4437-bb9b-5fe7dc4b640e-prod.lovable.cloud",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_9B7k_2np835d4nFNsKKzCQ_mzGuhM3C",
     // Lovable-hosted copy of the app that runs login/password actions (holds the backend key).
-    "ACCOUNT_SERVICE_URL": "https://edu-bond-suite.lovable.app"
+    "ACCOUNT_SERVICE_URL": "https://dawnbreakerschool.app"
   }
 }

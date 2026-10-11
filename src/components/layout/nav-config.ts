@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   MessageSquareText,
   School,
-  Upload,
   UserRound,
   Users,
   type LucideIcon,
@@ -70,7 +69,6 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Results", to: "/teacher/academics", icon: BookOpen },
     { label: "Updates", to: "/teacher/updates", icon: Bell },
     { label: "Parents", to: "/teacher/parents", icon: Link2 },
-    { label: "Import", to: "/teacher/import", icon: Upload },
     { label: "Account", to: "/account", icon: UserRound },
   ],
   admin: [
@@ -81,7 +79,6 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { label: "Attendance", to: "/admin/attendance", icon: CalendarCheck, group: "School" },
     { label: "Academics", to: "/admin/academics", icon: BookOpen, group: "School" },
     { label: "Updates", to: "/admin/updates", icon: Bell, group: "Communication" },
-    { label: "Import", to: "/admin/import", icon: Upload, group: "More" },
     { label: "History", to: "/admin/imports", icon: History, group: "More" },
     { label: "Account", to: "/account", icon: UserRound },
   ],

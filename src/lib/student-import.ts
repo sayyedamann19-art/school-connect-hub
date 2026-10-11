@@ -53,7 +53,14 @@ export type ValidatedRow = {
   existingStudentName?: string;
 };
 
+/** Classes the school runs; the template and Add New Class offer exactly these. */
+export const STANDARD_CLASSES = Array.from({ length: 10 }, (_, i) => `Class ${i + 1}`);
+
+export type TargetClass = { name: string; division: string | null };
+
 export type ImportContext = {
+  /** Set when importing from Manage Class: blank Class/Division cells use it, other classes are rejected. */
+  targetClass?: TargetClass | null;
   /** Lowercased GR number -> existing student summary. */
   existingByGr: Record<string, { id: string; fullName: string }>;
   /** Lowercased "class|division" keys a class teacher may import into; null = admin (any). */
@@ -89,8 +96,9 @@ export function validateRows(raw: RawRow[], context: ImportContext): ValidatedRo
 
     const grNumber = get("GR Number");
     const fullName = get("Student Name");
-    const className = get("Class");
-    const division = get("Division") || null;
+    const target = context.targetClass ?? null;
+    const className = get("Class") || target?.name || "";
+    const division = get("Division") || (get("Class") ? null : (target?.division ?? null));
     const parentName = get("Parent Name");
     const phone = normalisePhone(get("Parent Phone Number"));
     const rollNumber = get("Roll Number") || null;
@@ -123,7 +131,14 @@ export function validateRows(raw: RawRow[], context: ImportContext): ValidatedRo
       errors.push("Roll Number may only contain letters, numbers and -");
     }
 
-    if (
+    if (division && !/^[A-Za-z0-9]{1,10}$/.test(division)) {
+      errors.push("Division may only contain letters and numbers (for example A)");
+    }
+
+    const targetLabel = target ? `${target.name}${target.division ? ` ${target.division}` : ""}` : "";
+    if (className && target && classKey(className, division) !== classKey(target.name, target.division)) {
+      errors.push(`This row is for ${className}${division ? ` ${division}` : ""}, but you are importing into ${targetLabel}`);
+    } else if (
       className &&
       context.allowedClassKeys &&
       !context.allowedClassKeys.includes(classKey(className, division))
