@@ -348,6 +348,24 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          key: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          key?: string
+        }
+        Relationships: []
+      }
       parent_students: {
         Row: {
           created_at: string

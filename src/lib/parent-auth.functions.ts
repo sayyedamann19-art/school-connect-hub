@@ -1,33 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 /**
- * Resolves a student's GR number to the hidden internal login alias of the
- * parent account linked to that student. Returns nothing but the alias, and
- * the same shape for "not found" so the form can't be used to probe which GR
- * numbers exist.
+ * Parent sign-in with a GR number. The password check happens on the server; the
+ * browser only ever receives session tokens, never the hidden login email, and every
+ * failure (unknown GR, no parent, wrong password, too many tries) returns the same message.
  */
-export const resolveParentLogin = createServerFn({ method: "POST" })
+export const parentSignIn = createServerFn({ method: "POST" })
   .inputValidator((input) =>
-    z.object({ loginId: z.string().trim().min(1).max(32) }).parse(input),
+    z
+      .object({ grNumber: z.string().trim().min(1).max(32), password: z.string().min(1).max(72) })
+      .parse(input),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: student } = await supabaseAdmin
-      .from("students")
-      .select("id")
-      .ilike("gr_number", data.loginId)
-      .maybeSingle();
-
-    if (!student) return { email: null as string | null };
-
-    const { data: links } = await supabaseAdmin
-      .from("parent_students")
-      .select("parent:profiles(login_alias)")
-      .eq("student_id", student.id)
-      .limit(1);
-
-    const alias = links?.[0]?.parent?.login_alias ?? null;
-    return { email: alias };
+    const { runAccountAction, clientIpFrom } = await import("@/lib/account-admin.server");
+    const { GENERIC_SIGN_IN_ERROR } = await import("@/lib/account-rules");
+    try {
+      const session = await runAccountAction<{ access_token: string; refresh_token: string }>(
+        "parent_sign_in",
+        data,
+        { token: null, ip: clientIpFrom(getRequest()) },
+      );
+      return { ok: true as const, session };
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      return {
+        ok: false as const,
+        error: status === 401 ? GENERIC_SIGN_IN_ERROR : "Sign-in is unavailable right now. Please try again.",
+      };
+    }
   });

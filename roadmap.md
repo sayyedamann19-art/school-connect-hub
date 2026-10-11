@@ -2,5 +2,5 @@
 - [x] Teacher Parents panel
 - [x] Parent nav: Home + Account only; child profile Overview only
 - [x] Unread dot fix + test
-- [ ] Logins created/changed on Cloudflare (import save, add teacher/student, parent suspend, GR login) — needs a decision: Lovable hosting or a backend function
+- [x] Logins created/changed on Cloudflare via account service (needs Lovable re-publish to go live)
 - [ ] Closed-app push — blocked on Firebase setup + live test

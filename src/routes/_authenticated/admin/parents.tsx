@@ -24,6 +24,7 @@ import {
   adminLinkParentStudent,
   adminListParents,
   adminSetParentActive,
+  adminSetParentPassword,
   adminUnlinkParentStudent,
   type AdminParent,
 } from "@/lib/admin.functions";
@@ -74,6 +75,16 @@ function ParentsAdmin() {
     },
     onError: (error) =>
       toast.error("Couldn't update the parent", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: (payload: { parentId: string; password: string }) =>
+      adminSetParentPassword({ data: payload }),
+    onSuccess: () => toast.success("Password changed", { description: "Share it with the parent privately." }),
+    onError: (error) =>
+      toast.error("Couldn't change the password", {
         description: error instanceof Error ? error.message : undefined,
       }),
   });
@@ -139,7 +150,24 @@ function ParentsAdmin() {
                 .filter(Boolean)
                 .join(" · ")}
               action={
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={passwordMutation.isPending}
+                    onClick={() => {
+                      const password = window.prompt(`New password for ${parent.name} (at least 8 characters)`);
+                      if (password === null) return;
+                      if (password.length < 8 || password.length > 72) {
+                        toast.error("Password must be 8–72 characters");
+                        return;
+                      }
+                      passwordMutation.mutate({ parentId: parent.id, password });
+                    }}
+                  >
+                    Set password
+                  </Button>
                   <span className="meta-text">{parent.isActive ? "Active" : "Suspended"}</span>
                   <Switch
                     checked={parent.isActive}

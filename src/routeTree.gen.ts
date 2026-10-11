@@ -37,6 +37,7 @@ import { Route as AuthenticatedTeacherFeedbackRouteImport } from './routes/_auth
 import { Route as AuthenticatedTeacherImportRouteImport } from './routes/_authenticated/teacher/import'
 import { Route as AuthenticatedTeacherParentsRouteImport } from './routes/_authenticated/teacher/parents'
 import { Route as AuthenticatedTeacherUpdatesRouteImport } from './routes/_authenticated/teacher/updates'
+import { Route as ApiPublicAccountAdminRouteImport } from './routes/api/public/account-admin'
 import { Route as AuthenticatedParentAcademicsIndexRouteImport } from './routes/_authenticated/parent/academics.index'
 import { Route as AuthenticatedParentStudentStudentIdRouteImport } from './routes/_authenticated/parent/student/$studentId'
 import { Route as AuthenticatedParentAcademicsStudentIdExamIdRouteImport } from './routes/_authenticated/parent/academics.$studentId.$examId'
@@ -203,6 +204,11 @@ const AuthenticatedTeacherUpdatesRoute =
     path: '/teacher/updates',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicAccountAdminRoute = ApiPublicAccountAdminRouteImport.update({
+  id: '/api/public/account-admin',
+  path: '/api/public/account-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedParentAcademicsIndexRoute =
   AuthenticatedParentAcademicsIndexRouteImport.update({
     id: '/parent/academics/',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/teacher/parents': typeof AuthenticatedTeacherParentsRoute
   '/teacher/updates': typeof AuthenticatedTeacherUpdatesRoute
+  '/api/public/account-admin': typeof ApiPublicAccountAdminRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/parent/': typeof AuthenticatedParentIndexRoute
   '/teacher/': typeof AuthenticatedTeacherIndexRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/teacher/parents': typeof AuthenticatedTeacherParentsRoute
   '/teacher/updates': typeof AuthenticatedTeacherUpdatesRoute
+  '/api/public/account-admin': typeof ApiPublicAccountAdminRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/parent': typeof AuthenticatedParentIndexRoute
   '/teacher': typeof AuthenticatedTeacherIndexRoute
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/_authenticated/teacher/import': typeof AuthenticatedTeacherImportRoute
   '/_authenticated/teacher/parents': typeof AuthenticatedTeacherParentsRoute
   '/_authenticated/teacher/updates': typeof AuthenticatedTeacherUpdatesRoute
+  '/api/public/account-admin': typeof ApiPublicAccountAdminRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/parent/': typeof AuthenticatedParentIndexRoute
   '/_authenticated/teacher/': typeof AuthenticatedTeacherIndexRoute
@@ -347,6 +356,7 @@ export interface FileRouteTypes {
     | '/teacher/import'
     | '/teacher/parents'
     | '/teacher/updates'
+    | '/api/public/account-admin'
     | '/admin/'
     | '/parent/'
     | '/teacher/'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/teacher/import'
     | '/teacher/parents'
     | '/teacher/updates'
+    | '/api/public/account-admin'
     | '/admin'
     | '/parent'
     | '/teacher'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/_authenticated/teacher/import'
     | '/_authenticated/teacher/parents'
     | '/_authenticated/teacher/updates'
+    | '/api/public/account-admin'
     | '/_authenticated/admin/'
     | '/_authenticated/parent/'
     | '/_authenticated/teacher/'
@@ -423,6 +435,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ApiPublicAccountAdminRoute: typeof ApiPublicAccountAdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -623,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeacherUpdatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/account-admin': {
+      id: '/api/public/account-admin'
+      path: '/api/public/account-admin'
+      fullPath: '/api/public/account-admin'
+      preLoaderRoute: typeof ApiPublicAccountAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/parent/academics/': {
       id: '/_authenticated/parent/academics/'
       path: '/parent/academics'
@@ -720,6 +740,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ApiPublicAccountAdminRoute: ApiPublicAccountAdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
