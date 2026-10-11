@@ -46,7 +46,9 @@ export const listPublishedUpdates = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<SchoolUpdate[]> => {
     const { data, error } = await context.supabase
       .from("school_updates")
-      .select("id, title, body, category, is_published, published_at, first_published_at, created_at")
+      .select(
+        "id, title, body, category, is_published, published_at, first_published_at, created_at",
+      )
       .eq("is_published", true)
       .order("first_published_at", { ascending: false, nullsFirst: false })
       .limit(100);

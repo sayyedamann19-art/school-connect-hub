@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, LogOut, Menu } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
 import {
@@ -177,7 +177,6 @@ function MobileNavBar() {
 
   if (items.length === 0) return null;
 
-
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch px-2 py-1.5">
@@ -265,7 +264,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:pb-12">
+          {children}
+        </main>
       </div>
 
       <MobileNavBar />
