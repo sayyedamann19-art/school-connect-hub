@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Circular attendance meter — stroke colour follows the health of the number. */
@@ -12,6 +13,8 @@ export function AttendanceRing({
   label?: string;
   className?: string;
 }) {
+  const t = useT();
+  const t = useT();
   const radius = size / 2 - 9;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(Math.max(percent, 0), 100) / 100);
@@ -44,7 +47,7 @@ export function AttendanceRing({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="metric-number text-foreground">{percent}%</span>
-        <span className="eyebrow mt-1">{label}</span>
+        <span className="eyebrow mt-1">{t(label)}</span>
       </div>
     </div>
   );
@@ -52,6 +55,7 @@ export function AttendanceRing({
 
 /** Six-month attendance trend, drawn as a soft area line. */
 export function TrendChart({ data }: { data: { label: string; value: number }[] }) {
+  const t = useT();
   const width = 320;
   const height = 96;
   const min = 80;
@@ -66,7 +70,7 @@ export function TrendChart({ data }: { data: { label: string; value: number }[] 
 
   return (
     <div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-24 w-full" role="img" aria-label="Attendance trend">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-24 w-full" role="img" aria-label={t("Attendance trend")}>
         <defs>
           <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-teal)" stopOpacity="0.22" />
@@ -92,12 +96,13 @@ export function TrendChart({ data }: { data: { label: string; value: number }[] 
 
 /** Horizontal trait meter for the character card. */
 export function TraitBar({ name, score, max }: { name: string; score: number; max: number }) {
+  const t = useT();
   const pct = Math.round((score / max) * 100);
   const tone = pct >= 80 ? "bg-teal" : pct >= 60 ? "bg-gold" : "bg-danger";
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-semibold text-foreground">{name}</p>
+        <p className="text-sm font-semibold text-foreground">{t(name)}</p>
         <p className="meta-text tabular-nums">
           {score}/{max}
         </p>

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
+import { useT, useI18n, localeFor } from "@/lib/i18n";
 import { getMyChildren, getStudentNotes } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/feedback")({
@@ -26,13 +27,19 @@ export const Route = createFileRoute("/_authenticated/parent/feedback")({
   component: FeedbackPage,
 });
 
-function formatDate(value: string) {
+function formatDate(value: string, lang: string) {
   const parsed = new Date(`${value}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return parsed.toLocaleDateString(localeFor(lang as any), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function FeedbackPage() {
+  const t = useT();
+  const { lang } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const childrenQuery = useQuery({
@@ -55,8 +62,8 @@ function FeedbackPage() {
   if (childrenQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load teacher feedback"
-        description="Please try again in a moment."
+        title={t("We couldn't load teacher feedback")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void childrenQuery.refetch()}
       />
     );
@@ -65,8 +72,10 @@ function FeedbackPage() {
   if (!child) {
     return (
       <EmptyState
-        title="No children linked to your account yet"
-        description="Please contact the school office so your child's record can be linked to this login."
+        title={t("No children linked to your account yet")}
+        description={t(
+          "Please contact the school office so your child's record can be linked to this login.",
+        )}
       />
     );
   }
@@ -76,12 +85,19 @@ function FeedbackPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Teacher feedback</h1>
+        <h1 className="page-title">{t("Teacher feedback")}</h1>
         <p className="meta-text mt-1.5">
           {child.full_name}
-          {child.class
-            ? ` · Class ${child.class.division ? `${child.class.name}-${child.class.division}` : child.class.name}`
-            : ""}
+          {child.class && (
+            <>
+              {" · "}
+              {t("Class {name}", {
+                name: child.class.division
+                  ? `${child.class.name}-${child.class.division}`
+                  : child.class.name,
+              })}
+            </>
+          )}
         </p>
       </header>
 
@@ -99,14 +115,14 @@ function FeedbackPage() {
         <LoadingCards count={2} />
       ) : notesQuery.isError ? (
         <ErrorState
-          title="We couldn't load teacher feedback"
-          description="Please try again in a moment."
+          title={t("We couldn't load teacher feedback")}
+          description={t("Please try again in a moment.")}
           onRetry={() => void notesQuery.refetch()}
         />
       ) : notes.length === 0 ? (
         <EmptyState
-          title="No feedback yet"
-          description="Teachers share notes here through the term."
+          title={t("No feedback yet")}
+          description={t("Teachers share notes here through the term.")}
           icon={<MessageSquareText className="size-5" strokeWidth={1.75} />}
         />
       ) : (
@@ -118,7 +134,7 @@ function FeedbackPage() {
                   <p className="truncate text-sm font-bold text-foreground">{item.teacher_name}</p>
                   {item.subject ? <p className="meta-text mt-0.5">{item.subject}</p> : null}
                 </div>
-                <p className="meta-text shrink-0">{formatDate(item.note_date)}</p>
+                <p className="meta-text shrink-0">{formatDate(item.note_date, lang)}</p>
               </div>
               <p className="mt-3 text-sm leading-relaxed text-foreground/90">{item.note}</p>
             </li>

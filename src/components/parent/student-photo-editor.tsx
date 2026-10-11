@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, Trash2, Upload, X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,11 +13,11 @@ import { removeStudentPhoto, uploadStudentPhoto } from "@/lib/school.functions";
 const ACCEPTED = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 3 * 1024 * 1024;
 
-function readAsDataUrl(file: File) {
+function readAsDataUrl(file: File, t: (s: string) => string) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("That image could not be read"));
+    reader.onerror = () => reject(new Error(t("That image could not be read")));
     reader.readAsDataURL(file);
   });
 }
@@ -31,6 +32,8 @@ export function StudentPhotoEditor({
   name: string;
   photoUrl: string | null;
 }) {
+  const t = useT();
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<{ dataUrl: string; contentType: string } | null>(null);
   const queryClient = useQueryClient();
@@ -51,10 +54,10 @@ export function StudentPhotoEditor({
     onSuccess: async () => {
       setPreview(null);
       await refresh();
-      toast.success("Photo updated");
+      toast.success(t("Photo updated"));
     },
     onError: (error: Error) => {
-      toast.error("Photo not saved", { description: error.message });
+      toast.error(t("Photo not saved"), { description: error.message });
     },
   });
 
@@ -64,10 +67,10 @@ export function StudentPhotoEditor({
     },
     onSuccess: async () => {
       await refresh();
-      toast.success("Photo removed");
+      toast.success(t("Photo removed"));
     },
     onError: (error: Error) => {
-      toast.error("Could not remove photo", { description: error.message });
+      toast.error(t("Could not remove photo"), { description: error.message });
     },
   });
 
@@ -76,20 +79,20 @@ export function StudentPhotoEditor({
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
     if (!ACCEPTED.includes(file.type.toLowerCase())) {
-      toast.error("Unsupported file", {
-        description: "Please choose a JPG, PNG or WebP image under 3 MB.",
+      toast.error(t("Unsupported file"), {
+        description: t("Please choose a JPG, PNG or WebP image under 3 MB."),
       });
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error("Image too large", { description: "Please choose an image under 3 MB." });
+      toast.error(t("Image too large"), { description: t("Please choose an image under 3 MB.") });
       return;
     }
     try {
-      const dataUrl = await readAsDataUrl(file);
+      const dataUrl = await readAsDataUrl(file, t);
       setPreview({ dataUrl, contentType: file.type.toLowerCase() });
     } catch (error) {
-      toast.error("That image could not be read", { description: (error as Error).message });
+      toast.error(t("That image could not be read"), { description: (error as Error).message });
     }
   };
 
@@ -128,7 +131,7 @@ export function StudentPhotoEditor({
             ) : (
               <Upload className="mr-2 size-4" />
             )}
-            Save photo
+            {t("Save photo")}
           </Button>
           <Button
             size="sm"
@@ -138,7 +141,7 @@ export function StudentPhotoEditor({
             onClick={() => setPreview(null)}
           >
             <X className="mr-2 size-4" />
-            Cancel
+            {t("Cancel")}
           </Button>
         </div>
       ) : (
@@ -151,7 +154,7 @@ export function StudentPhotoEditor({
             onClick={() => inputRef.current?.click()}
           >
             <Camera className="mr-2 size-4" />
-            {photoUrl ? "Change photo" : "Upload photo"}
+            {photoUrl ? t("Change photo") : t("Upload photo")}
           </Button>
           {photoUrl ? (
             <Button
@@ -160,7 +163,7 @@ export function StudentPhotoEditor({
               className="w-full text-danger sm:w-auto"
               disabled={busy}
               onClick={() => {
-                if (!window.confirm("Remove this photo?")) return;
+                if (!window.confirm(t("Remove this photo?"))) return;
                 removeMutation.mutate();
               }}
             >
@@ -169,12 +172,12 @@ export function StudentPhotoEditor({
               ) : (
                 <Trash2 className="mr-2 size-4" />
               )}
-              Remove
+              {t("Remove")}
             </Button>
           ) : null}
         </div>
       )}
-      <p className="text-xs text-muted-foreground">JPG, PNG or WebP · up to 3 MB</p>
+      <p className="text-xs text-muted-foreground">{t("JPG, PNG or WebP · up to 3 MB")}</p>
     </div>
   );
 }

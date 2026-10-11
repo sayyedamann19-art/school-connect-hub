@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { getStudentExamResult } from "@/lib/academics.functions";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/parent/academics/$studentId/$examId")({
   head: () => ({
@@ -27,6 +28,7 @@ function fmt(n: number) {
 }
 
 function ExamResultPage() {
+  const t = useT();
   const { studentId, examId } = Route.useParams();
   const query = useQuery({
     queryKey: ["parent", "exam-result", studentId, examId],
@@ -35,20 +37,23 @@ function ExamResultPage() {
 
   const back = (
     <Link to="/parent/academics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal">
-      <ArrowLeft className="size-4" /> Academics
+      <ArrowLeft className="size-4" /> {t("Academics")}
     </Link>
   );
 
   if (query.isLoading) return <LoadingCards count={2} />;
   if (query.isError)
-    return <ErrorState title="We couldn't load this result" onRetry={() => void query.refetch()} />;
+    return <ErrorState title={t("We couldn't load this result")} onRetry={() => void query.refetch()} />;
 
   const d = query.data!;
   if (!d.student || !d.exam || d.exam.status !== "published" || d.results.length === 0)
     return (
       <div className="space-y-4">
         {back}
-        <EmptyState title="Result not available" description="This result isn't published or isn't linked to your account." />
+        <EmptyState
+          title={t("Result not available")}
+          description={t("This result isn't published or isn't linked to your account.")}
+        />
       </div>
     );
 
@@ -59,7 +64,7 @@ function ExamResultPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         {back}
         <Button onClick={() => window.print()}>
-          <Printer className="size-4" /> Print Marksheet
+          <Printer className="size-4" /> {t("Print Marksheet")}
         </Button>
       </div>
       <PrintableMarksheet exam={d.exam} student={d.student} classInfo={d.classInfo} results={d.results} summary={s} />
@@ -67,7 +72,7 @@ function ExamResultPage() {
         <h1 className="page-title">{d.exam.name}</h1>
         <p className="meta-text mt-1.5">
           {d.student.full_name}
-          {d.className ? ` · Class ${d.className}` : ""} · {d.exam.academic_year}
+          {d.className ? ` · ${t("Class {className}", { className: d.className })}` : ""} · {d.exam.academic_year}
         </p>
       </header>
 
@@ -79,30 +84,30 @@ function ExamResultPage() {
               {r.status === "present" && r.marks_obtained !== null
                 ? `${fmt(r.marks_obtained)} / ${fmt(r.maximum_marks)}`
                 : r.status === "absent"
-                  ? "Absent"
-                  : "Not applicable"}
+                  ? t("Absent")
+                  : t("Not applicable")}
             </span>
           </div>
         ))}
         <div className="flex items-center justify-between gap-3 px-5 py-3">
-          <span className="text-sm font-bold text-foreground">Total</span>
+          <span className="text-sm font-bold text-foreground">{t("Total")}</span>
           <span className="text-sm font-bold text-foreground">
             {fmt(s.obtained)} / {fmt(s.maximum)}
           </span>
         </div>
         <div className="flex items-center justify-between gap-3 px-5 py-3">
-          <span className="text-sm font-bold text-foreground">Percentage</span>
+          <span className="text-sm font-bold text-foreground">{t("Percentage")}</span>
           <span className="metric-number text-lg text-foreground">{s.percent !== null ? `${s.percent}%` : "—"}</span>
         </div>
       </section>
 
       {s.absent > 0 || s.notApplicable > 0 ? (
         <p className="meta-text">
-          Absent and not-applicable subjects are not counted as zero and are left out of the total.
+          {t("Absent and not-applicable subjects are not counted as zero and are left out of the total.")}
         </p>
       ) : null}
       {!s.complete ? (
-        <p className="meta-text">Some subjects have no marks recorded yet, so no final percentage is shown.</p>
+        <p className="meta-text">{t("Some subjects have no marks recorded yet, so no final percentage is shown.")}</p>
       ) : null}
     </div>
   );

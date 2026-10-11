@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states
 import { useMarkUpdatesRead, useParentUpdates } from "@/hooks/use-parent-updates";
 import type { UpdateCategory } from "@/lib/updates.functions";
 import { cn } from "@/lib/utils";
+import { useT, useI18n, localeFor, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/parent/notifications")({
   head: () => ({
@@ -37,9 +38,9 @@ const filters = [
   { value: "holiday", label: "Holiday" },
 ] as const;
 
-function formatWhen(value: string | null) {
+function formatWhen(value: string | null, lang: Lang) {
   if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString(localeFor(lang), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -47,6 +48,8 @@ function formatWhen(value: string | null) {
 }
 
 function NotificationsPage() {
+  const t = useT();
+  const { lang } = useI18n();
   const { updates: query, readSet, unread } = useParentUpdates();
   const { data, isLoading, isError, refetch } = query;
   const markRead = useMarkUpdatesRead();
@@ -68,8 +71,8 @@ function NotificationsPage() {
   if (isError) {
     return (
       <ErrorState
-        title="We couldn't load updates"
-        description="Please try again in a moment."
+        title={t("We couldn't load updates")}
+        description={t("Please try again in a moment.")}
         onRetry={() => void refetch()}
       />
     );
@@ -82,16 +85,16 @@ function NotificationsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="page-title">Updates</h1>
+        <h1 className="page-title">{t("Updates")}</h1>
         <p className="meta-text mt-1.5">
           {all.length === 0
-            ? "No updates published yet"
-            : `${all.length} update${all.length === 1 ? "" : "s"} from the school`}
+            ? t("No updates published yet")
+            : t("{n} updates from the school", { n: all.length })}
         </p>
       </header>
 
       {all.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter updates">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("Filter updates")}>
           {filters.map((item) => (
             <button
               key={item.value}
@@ -106,7 +109,7 @@ function NotificationsPage() {
                   : "border-border bg-surface text-foreground hover:bg-muted",
               )}
             >
-              {item.label}
+              {t(item.label)}
             </button>
           ))}
         </div>
@@ -114,11 +117,11 @@ function NotificationsPage() {
 
       {updates.length === 0 ? (
         <EmptyState
-          title={all.length === 0 ? "No updates yet" : "Nothing in this category"}
+          title={all.length === 0 ? t("No updates yet") : t("Nothing in this category")}
           description={
             all.length === 0
-              ? "School notices will appear here as soon as the school publishes them."
-              : "Try another filter to see other updates."
+              ? t("School notices will appear here as soon as the school publishes them.")
+              : t("Try another filter to see other updates.")
           }
           icon={<BellRing className="size-5" strokeWidth={1.75} />}
         />
@@ -141,7 +144,7 @@ function NotificationsPage() {
                     {item.title}
                     {newIds.has(item.id) ? (
                       <span className="rounded-full bg-danger px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-danger-foreground">
-                        New
+                        {t("New")}
                       </span>
                     ) : null}
                   </p>
@@ -149,8 +152,8 @@ function NotificationsPage() {
                     {item.body}
                   </p>
                   <p className="meta-text mt-2">
-                    {meta.label} · From {item.sender_name} ·{" "}
-                    {formatWhen(item.first_published_at ?? item.published_at ?? item.created_at)}
+                    {t(meta.label)} · {t("From {sender}", { sender: item.sender_name })} ·{" "}
+                    {formatWhen(item.first_published_at ?? item.published_at ?? item.created_at, lang)}
                   </p>
                 </div>
               </article>

@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, LogOut, Menu } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { useState, type ReactNode } from "react";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
@@ -54,6 +55,7 @@ function isItemActive(item: NavItem, pathname: string) {
 }
 
 function NavLinkItem({
+
   item,
   pathname,
   onNavigate,
@@ -62,6 +64,7 @@ function NavLinkItem({
   pathname: string;
   onNavigate?: (() => void) | undefined;
 }) {
+  const t = useT();
   const active = isItemActive(item, pathname);
   return (
     <Link
@@ -75,12 +78,13 @@ function NavLinkItem({
       )}
     >
       <item.icon className="size-[1.125rem]" strokeWidth={1.75} />
-      {item.label}
+      {t(item.label)}
     </Link>
   );
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useT();
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const items = primaryRole ? navByRole[primaryRole] : [];
@@ -113,7 +117,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       {groups.map((group) => (
         <div key={group.name} className="space-y-1">
           <p className="px-3 pb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            {group.name}
+            {t(group.name)}
           </p>
           {group.items.map((item) => (
             <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
@@ -132,10 +136,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function AccountMenu() {
+  const t = useT();
   const { user, primaryRole } = useAuth();
   const signOut = useSignOut();
   const name =
-    (user?.user_metadata?.["full_name"] as string | undefined) ?? user?.email ?? "Account";
+    (user?.user_metadata?.["full_name"] as string | undefined) ?? user?.email ?? t("Account");
 
   return (
     <DropdownMenu>
@@ -152,19 +157,19 @@ function AccountMenu() {
         <DropdownMenuLabel>
           <p className="truncate text-sm font-semibold">{name}</p>
           <p className="text-xs font-normal text-muted-foreground">
-            {primaryRole ? roleLabel[primaryRole] : "No role assigned"}
+            {primaryRole ? t(roleLabel[primaryRole]) : t("No role assigned")}
           </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/account">
             <Bell className="mr-2 size-4" strokeWidth={1.75} />
-            My account
+            {t("My account")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void signOut()}>
           <LogOut className="mr-2 size-4" strokeWidth={1.75} />
-          Sign out
+          {t("Sign out")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -172,6 +177,7 @@ function AccountMenu() {
 }
 
 function MobileNavBar() {
+  const t = useT();
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const items = primaryRole ? bottomNavByRole[primaryRole] : [];
@@ -198,7 +204,7 @@ function MobileNavBar() {
                 <item.icon className="size-[1.125rem]" strokeWidth={active ? 2 : 1.75} />
               </span>
               <span className={active ? "text-foreground" : "text-muted-foreground"}>
-                {item.label}
+                {t(item.label)}
               </span>
             </Link>
           );
@@ -209,6 +215,7 @@ function MobileNavBar() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { session, primaryRole } = useAuth();
   const isParent = Boolean(session) && primaryRole === "parent";
@@ -226,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mt-8 flex-1 overflow-y-auto">
           <NavLinks />
         </div>
-        <p className="meta-text">Student records are private to linked accounts.</p>
+        <p className="meta-text">{t("Student records are private to linked accounts.")}</p>
       </aside>
 
       <div className="lg:pl-64">
@@ -234,12 +241,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex min-w-0 items-center gap-2">
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+                <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t("Open menu")}>
                   <Menu className="size-5" strokeWidth={1.75} />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-5">
-                <SheetTitle className="sr-only">Navigation</SheetTitle>
+                <SheetTitle className="sr-only">{t("Navigation")}</SheetTitle>
                 <BrandMark />
                 <div className="mt-8">
                   <NavLinks onNavigate={() => setMobileNavOpen(false)} />
@@ -255,7 +262,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Button variant="ghost" size="icon" className="relative size-10 rounded-full" asChild>
                 <Link
                   to={staffRole ? `/${staffRole}/updates` : "/parent/notifications"}
-                  aria-label={unread.length ? `Updates, ${unread.length} unread` : "Updates"}
+                  aria-label={unread.length ? t("Updates, {n} unread", { n: unread.length }) : t("Updates")}
                 >
                   <Bell className="size-5" strokeWidth={1.75} />
                   {unread.length ? (
