@@ -197,7 +197,56 @@ function ClassesAdmin() {
       )}
 
       <ClassDialog dialog={dialog} onClose={() => setDialog(null)} />
+      <DeleteClassDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </div>
+  );
+}
+
+function DeleteClassDialog({ target, onClose }: { target: AdminClass | null; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (classId: string) => adminDeleteClass({ data: { classId } }),
+    onSuccess: () => {
+      toast.success("Class deleted");
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["classes"] });
+      onClose();
+    },
+    onError: (error) => {
+      toast.error("Couldn't delete the class", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    },
+  });
+
+  if (!target) return null;
+  const label = `${target.name}${target.division ? ` · Division ${target.division}` : ""} (${target.academic_year})`;
+
+  return (
+    <AlertDialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {label}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes the class, its teacher assignments and its subject format. Classes that still
+            have students, exam results or teacher notes can't be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={mutation.isPending}
+            onClick={(event) => {
+              event.preventDefault();
+              mutation.mutate(target.id);
+            }}
+          >
+            {mutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            Delete class
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
