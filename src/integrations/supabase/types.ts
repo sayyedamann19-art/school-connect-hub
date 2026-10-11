@@ -414,6 +414,7 @@ export type Database = {
           login_alias: string | null
           notify_updates: boolean
           phone: string | null
+          preferred_language: string
           updated_at: string
         }
         Insert: {
@@ -424,6 +425,7 @@ export type Database = {
           login_alias?: string | null
           notify_updates?: boolean
           phone?: string | null
+          preferred_language?: string
           updated_at?: string
         }
         Update: {
@@ -434,6 +436,7 @@ export type Database = {
           login_alias?: string | null
           notify_updates?: boolean
           phone?: string | null
+          preferred_language?: string
           updated_at?: string
         }
         Relationships: []
