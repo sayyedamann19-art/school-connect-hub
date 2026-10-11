@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, LogOut, Menu } from "lucide-react";
-import { useT } from "@/lib/i18n";
 import { useState, type ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 
 import { SchoolLogo } from "@/components/brand/school-logo";
 import {
@@ -55,7 +55,6 @@ function isItemActive(item: NavItem, pathname: string) {
 }
 
 function NavLinkItem({
-
   item,
   pathname,
   onNavigate,

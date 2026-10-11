@@ -14,7 +14,6 @@ export function AttendanceRing({
   className?: string;
 }) {
   const t = useT();
-  const t = useT();
   const radius = size / 2 - 9;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(Math.max(percent, 0), 100) / 100);
@@ -55,7 +54,6 @@ export function AttendanceRing({
 
 /** Six-month attendance trend, drawn as a soft area line. */
 export function TrendChart({ data }: { data: { label: string; value: number }[] }) {
-  const t = useT();
   const width = 320;
   const height = 96;
   const min = 80;
@@ -96,7 +94,6 @@ export function TrendChart({ data }: { data: { label: string; value: number }[] 
 
 /** Horizontal trait meter for the character card. */
 export function TraitBar({ name, score, max }: { name: string; score: number; max: number }) {
-  const t = useT();
   const pct = Math.round((score / max) * 100);
   const tone = pct >= 80 ? "bg-teal" : pct >= 60 ? "bg-gold" : "bg-danger";
   return (

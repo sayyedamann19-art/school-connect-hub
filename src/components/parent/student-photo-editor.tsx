@@ -33,7 +33,6 @@ export function StudentPhotoEditor({
   photoUrl: string | null;
 }) {
   const t = useT();
-  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<{ dataUrl: string; contentType: string } | null>(null);
   const queryClient = useQueryClient();

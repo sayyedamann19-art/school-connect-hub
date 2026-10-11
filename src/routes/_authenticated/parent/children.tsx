@@ -10,7 +10,7 @@ import { getMyChildren } from "@/lib/school.functions";
 export const Route = createFileRoute("/_authenticated/parent/children")({
   head: () => ({
     meta: [
-      { title: t("My children — Dawn Breakers School") },
+      { title: "My children — Dawn Breakers School" },
       {
         name: "description",
         content:
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/parent/children")({
       { property: "og:title", content: "My children — Dawn Breakers School" },
       {
         property: "og:description",
-        content: t("Every child linked to your parent account in one place."),
+        content: "Every child linked to your parent account in one place.",
       },
     ],
   }),
@@ -38,7 +38,7 @@ function ChildrenPage() {
   if (isError) {
     return (
       <ErrorState
-        title={t("We couldn.t load your children")}
+        title={t("We couldn't load your children")}
         description={t("Please try again in a moment.")}
         onRetry={() => void refetch()}
       />
@@ -59,7 +59,7 @@ function ChildrenPage() {
       {childrenList.length === 0 ? (
         <EmptyState
           title={t("No children linked to your account yet")}
-          description={t("Please contact the school office so your child.s record can be linked to this login.")}
+          description={t("Please contact the school office so your child's record can be linked to this login.")}
         />
       ) : (
         <div className="space-y-3">
@@ -80,9 +80,11 @@ function ChildrenPage() {
                 <p className="truncate text-sm font-bold text-foreground">{child.full_name}</p>
                 <p className="meta-text mt-0.5">
                   {child.class
-                    ? `child.class.division ? t("Class {name}-{division}", { name: child.class.name, division: child.class.division }) : t("Class {name}", { name: child.class.name })`
+                    ? child.class.division
+                      ? t("Class {name}-{division}", { name: child.class.name, division: child.class.division })
+                      : t("Class {name}", { name: child.class.name })
                     : t("Class not assigned")}
-                  {child.roll_number ? ` · t("Roll {n}", { n: child.roll_number })` : ""} · GR {child.gr_number}
+                  {child.roll_number ? ` · ${t("Roll {n}", { n: child.roll_number })}` : ""} · GR {child.gr_number}
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-4">
                   <span className="text-xs font-bold text-teal">
@@ -102,7 +104,7 @@ function ChildrenPage() {
       )}
 
       <p className="meta-text">
-        Siblings are grouped under one login. Contact the school office if a child is missing.
+        {t("Siblings are grouped under one login. Contact the school office if a child is missing.")}
       </p>
     </div>
   );
