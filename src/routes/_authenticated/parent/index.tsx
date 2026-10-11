@@ -88,7 +88,7 @@ function ParentHome() {
     <div className="space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0">
-          <p className="eyebrow">Good morning</p>
+          <p className="eyebrow" suppressHydrationWarning>{greeting}</p>
           <h1 className="page-title mt-1 truncate">{data?.parentName ?? "Parent"}</h1>
         </div>
       </header>
