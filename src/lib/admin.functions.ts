@@ -138,37 +138,19 @@ export const adminDeleteClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ classId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await assertAdmin(context.supabase as any);
-    const { supabase } = context;
+    // Atomic, admin-checked in the database: blocks if any student is in the class,
+    // keeps results/notes (detached), removes assignments and subject format.
+    const { error } = await context.supabase.rpc("admin_delete_class", { _class_id: data.classId });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
-    const { count: studentCount } = await supabase
-      .from("students")
-      .select("id", { count: "exact", head: true })
-      .eq("class_id", data.classId);
-    if ((studentCount ?? 0) > 0) {
-      throw new Error("This class still has students. Move or remove them first.");
-    }
-    const { count: resultCount } = await supabase
-      .from("academic_results")
-      .select("id", { count: "exact", head: true })
-      .eq("class_id", data.classId);
-    if ((resultCount ?? 0) > 0) {
-      throw new Error("This class has recorded exam results and can't be deleted.");
-    }
-    const { count: noteCount } = await supabase
-      .from("teacher_notes")
-      .select("id", { count: "exact", head: true })
-      .eq("class_id", data.classId);
-    if ((noteCount ?? 0) > 0) {
-      throw new Error("This class has teacher notes linked to it and can't be deleted.");
-    }
-
-    for (const table of ["class_teachers", "class_subjects"] as const) {
-      const { error } = await supabase.from(table).delete().eq("class_id", data.classId);
-      if (error) throw new Error(error.message);
-    }
-    const { error } = await supabase.from("classes").delete().eq("id", data.classId);
+/** Remove a teacher: drops class assignments and teacher access; history keeps attribution. */
+export const adminDeleteTeacher = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ teacherId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("admin_delete_teacher", { _teacher_id: data.teacherId });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -194,6 +176,7 @@ export const adminListTeachers = createServerFn({ method: "GET" })
     const { data: teachers, error } = await supabase
       .from("teachers")
       .select("id, profile_id, employee_code, is_active")
+      .is("deleted_at", null)
       .order("employee_code");
     if (error) throw new Error(error.message);
 
