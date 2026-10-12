@@ -8,4 +8,4 @@
 - [x] Delete Teacher (admin) + class deletion allowed when no students
 - [ ] Dummy data (50 students/parents, 10 teachers) — blocked: only 8 classes exist, need approval to add Class 1–10 set
 - [ ] Admin account role/password — blocked: email + temporary password not included in the plan
-- [ ] Create teacher login for Aman (password AMANSAYYED@123) — may be rejected as weak/leaked
+- [x] Created teacher login aman.sayyed@dawnbreakerschool.app (AMANSAYYED@123) — sign-in verified, lands on /teacher
