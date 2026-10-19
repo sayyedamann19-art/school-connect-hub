@@ -439,12 +439,22 @@ export async function executeAccountAction(
       });
       if (error || !created.user) throw new AccountError("Couldn't create the teacher login (is the email already used?)");
       const id = created.user.id;
-      await sb.from("profiles").upsert({ id, full_name: d.fullName, ...(d.phone ? { phone: d.phone } : {}) }, { onConflict: "id" });
-      await sb.from("user_roles").upsert({ user_id: id, role: "teacher" }, { onConflict: "user_id,role" });
-      const { error: tErr } = await sb
-        .from("teachers")
-        .insert({ profile_id: id, ...(d.employeeCode ? { employee_code: d.employeeCode } : {}) });
-      if (tErr) throw new AccountError("Couldn't save the teacher record");
+      try {
+        await sb.from("profiles").upsert({ id, full_name: d.fullName, ...(d.phone ? { phone: d.phone } : {}) }, { onConflict: "id" });
+        await sb.from("user_roles").upsert({ user_id: id, role: "teacher" }, { onConflict: "user_id,role" });
+        const { error: tErr } = await sb
+          .from("teachers")
+          .insert({ profile_id: id, ...(d.employeeCode ? { employee_code: d.employeeCode } : {}) });
+        if (tErr) {
+          throw new AccountError(
+            tErr.code === "23505" ? "That employee code is already used by another teacher" : "Couldn't save the teacher record",
+          );
+        }
+      } catch (e) {
+        // Never leave a login without a teacher record behind.
+        await sb.auth.admin.deleteUser(id).catch(() => undefined);
+        throw e;
+      }
       return { ok: true };
     }
     case "create_student": {
@@ -549,6 +559,10 @@ export async function executeAccountAction(
         }
       }
       return { ok: true, parentId };
+    }
+    case "delete_teacher": {
+      const d = parsed.data as z.infer<typeof schemas.delete_teacher>;
+      return deleteTeacher(sb, caller, d.teacherId);
     }
   }
   throw new AccountError("Unknown action");
