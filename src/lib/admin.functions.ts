@@ -145,14 +145,50 @@ export const adminDeleteClass = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Remove a teacher: drops class assignments and teacher access; history keeps attribution. */
+/**
+ * Remove a teacher: drops class assignments and teacher access, releases the login
+ * email and employee code for reuse, and keeps the teacher record so past feedback,
+ * character points and updates still show their name. Runs through the privileged
+ * account service, which re-verifies the admin role server-side.
+ */
 export const adminDeleteTeacher = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ teacherId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("admin_delete_teacher", { _teacher_id: data.teacherId });
+  .handler(async ({ data }) => {
+    return accountService<{ ok: true }>("delete_teacher", { teacherId: data.teacherId });
+  });
+
+export type RemovedTeacher = {
+  id: string;
+  name: string;
+  employee_code: string | null;
+  deleted_at: string | null;
+};
+
+/** Previously deleted teachers whose logins may still need releasing (recovery path). */
+export const adminListRemovedTeachers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<RemovedTeacher[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { data: teachers, error } = await context.supabase
+      .from("teachers")
+      .select("id, profile_id, employee_code, deleted_at")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { ok: true };
+    const ids = (teachers ?? []).map((t) => t.profile_id);
+    const nameById = new Map<string, string | null>();
+    if (ids.length) {
+      const { data: profiles } = await context.supabase.from("profiles").select("id, full_name").in("id", ids);
+      for (const p of profiles ?? []) nameById.set(p.id, p.full_name);
+    }
+    return (teachers ?? []).map((t) => ({
+      id: t.id,
+      name: nameById.get(t.profile_id) ?? "Teacher",
+      employee_code: t.employee_code,
+      deleted_at: t.deleted_at,
+    }));
   });
 
 export type AdminTeacher = {
