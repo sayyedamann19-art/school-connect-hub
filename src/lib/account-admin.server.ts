@@ -12,6 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   ATTEMPT_WINDOW_MINUTES,
   GENERIC_SIGN_IN_ERROR,
+  canRemoveTeacherLogin,
   canRun,
   exactIlike,
   isLockedOut,
@@ -88,6 +89,7 @@ const schemas = {
     relationship: z.string().trim().max(30).optional(),
     studentIds: z.array(z.string().uuid()).min(1).max(10),
   }),
+  delete_teacher: z.object({ teacherId: z.string().uuid() }),
 } satisfies Record<AccountAction, z.ZodTypeAny>;
 
 export type AccountPayload<A extends AccountAction> = z.input<(typeof schemas)[A]>;
