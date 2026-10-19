@@ -56,3 +56,20 @@ describe("deleting a parent", () => {
     expect(r.map((s) => s.id)).toEqual(["a"]);
   });
 });
+
+import { canRemoveTeacherLogin } from "@/lib/account-rules";
+describe("deleting a teacher", () => {
+  it("only admins may run it", () => {
+    expect(canRun("delete_teacher", ["admin"])).toBe(true);
+    expect(canRun("delete_teacher", ["teacher"])).toBe(false);
+    expect(canRun("delete_teacher", ["parent"])).toBe(false);
+    expect(canRun("delete_teacher", [])).toBe(false);
+  });
+  it("login removal is allowed only for pure teacher accounts", () => {
+    expect(canRemoveTeacherLogin(["teacher"])).toBe(true);
+    expect(canRemoveTeacherLogin(["teacher", "admin"])).toBe(false);
+    expect(canRemoveTeacherLogin(["teacher", "parent"])).toBe(false);
+    expect(canRemoveTeacherLogin(["admin"])).toBe(false);
+    expect(canRemoveTeacherLogin([])).toBe(false);
+  });
+});

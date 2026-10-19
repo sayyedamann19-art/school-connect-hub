@@ -12,6 +12,7 @@ export const ACCOUNT_ACTIONS = [
   "set_parent_password",
   "change_parent_contact",
   "create_parent",
+  "delete_teacher",
 ] as const;
 export type AccountAction = (typeof ACCOUNT_ACTIONS)[number];
 
@@ -30,6 +31,19 @@ export function canRun(action: AccountAction, roles: Role[]): boolean {
 export function isManageableParent(targetRoles: Role[]): boolean {
   return (
     targetRoles.includes("parent") && !targetRoles.includes("admin") && !targetRoles.includes("teacher")
+  );
+}
+
+/**
+ * A teacher login may only be removed when the account is purely a teacher account.
+ * Admins are never touched, and an account that is also a parent keeps its login so
+ * the family isn't signed out — the admin must resolve the mix first.
+ */
+export function canRemoveTeacherLogin(targetRoles: Role[]): boolean {
+  return (
+    targetRoles.includes("teacher") &&
+    !targetRoles.includes("admin") &&
+    !targetRoles.includes("parent")
   );
 }
 
