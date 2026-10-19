@@ -32,6 +32,7 @@ import {
   adminDeleteTeacher,
   adminCreateTeacher,
   adminListClasses,
+  adminListRemovedTeachers,
   adminListTeachers,
   adminSetTeacherActive,
   adminUnassignTeacher,
@@ -210,9 +211,9 @@ function TeachersAdmin() {
             <DialogHeader>
               <DialogTitle>Delete {deleting.name}?</DialogTitle>
               <DialogDescription>
-                They lose teacher access and all class assignments. Their past feedback, character
-                points and updates stay, still showing their name. Students, attendance and results
-                are not touched.
+                Their login is removed and their email and employee code can be used again for a
+                new teacher. Their past feedback, character points and updates stay, still showing
+                their name. Students, attendance and results are not touched.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
