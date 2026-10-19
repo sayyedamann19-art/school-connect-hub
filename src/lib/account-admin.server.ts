@@ -349,6 +349,64 @@ async function importRows(
   return results;
 }
 
+/**
+ * Remove a teacher's access and login while keeping their record and name for history.
+ * The auth user is NOT deleted: profiles -> teachers cascades would erase attribution
+ * on past notes, points and updates. Instead the login email is moved to a tombstone
+ * address (freeing the real email for reuse) and the account is banned. Every step is
+ * safe to re-run, so a retry after a partial failure finishes the cleanup.
+ */
+async function deleteTeacher(sb: Admin, caller: { userId: string }, teacherId: string) {
+  const { data: teacher } = await sb
+    .from("teachers")
+    .select("id, profile_id, deleted_at")
+    .eq("id", teacherId)
+    .maybeSingle();
+  if (!teacher) throw new AccountError("Teacher not found", 404);
+  if (teacher.profile_id === caller.userId) {
+    throw new AccountError("You cannot delete your own teacher access", 403);
+  }
+  const targetRoles = await rolesOf(sb, teacher.profile_id);
+  if (!canRemoveTeacherLogin(targetRoles)) {
+    throw new AccountError(
+      targetRoles.includes("admin")
+        ? "This account is an administrator and cannot be deleted here"
+        : "This account is also linked as a parent. Remove the parent link first, then delete the teacher.",
+      403,
+    );
+  }
+
+  const { error: assignErr } = await sb.from("class_teachers").delete().eq("teacher_id", teacher.id);
+  if (assignErr) throw new AccountError("Couldn't remove the teacher's class assignments", 500);
+
+  const { error: tErr } = await sb
+    .from("teachers")
+    .update({ is_active: false, deleted_at: new Date().toISOString(), employee_code: null })
+    .eq("id", teacher.id);
+  if (tErr) throw new AccountError("Couldn't update the teacher record", 500);
+
+  const { error: roleErr } = await sb
+    .from("user_roles")
+    .delete()
+    .eq("user_id", teacher.profile_id)
+    .eq("role", "teacher");
+  if (roleErr) throw new AccountError("Couldn't remove the teacher role", 500);
+
+  // Free the login email for reuse; skip if a previous run already tombstoned it.
+  const { data: authUser, error: getErr } = await sb.auth.admin.getUserById(teacher.profile_id);
+  if (getErr) throw new AccountError("Couldn't check the teacher's login", 500);
+  const tombstone = `removed.${teacher.profile_id}@removed.dawnbreakers.invalid`;
+  if (authUser.user && authUser.user.email !== tombstone) {
+    const { error: updErr } = await sb.auth.admin.updateUserById(teacher.profile_id, {
+      email: tombstone,
+      email_confirm: true,
+      ban_duration: "876000h",
+    });
+    if (updErr) throw new AccountError("Teacher access removed, but the old login couldn't be released. Try again.", 500);
+  }
+  return { ok: true };
+}
+
 /** Runs an action locally. Only callable where the master key exists. */
 export async function executeAccountAction(
   action: AccountAction,
