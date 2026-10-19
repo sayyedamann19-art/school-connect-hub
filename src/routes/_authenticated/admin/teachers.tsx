@@ -204,6 +204,8 @@ function TeachersAdmin() {
         </div>
       )}
 
+      <RemovedTeachersSection />
+
       <AddTeacherDialog open={adding} onClose={() => setAdding(false)} />
       {deleting ? (
         <Dialog open onOpenChange={(next) => (next ? null : setDeleting(null))}>
@@ -241,6 +243,63 @@ function TeachersAdmin() {
         onClose={() => setAssigning(null)}
       />
     </div>
+  );
+}
+
+/** Teachers deleted before logins were released — lets an admin free those emails. */
+function RemovedTeachersSection() {
+  const queryClient = useQueryClient();
+  const removedQuery = useQuery({
+    queryKey: ["admin", "removed-teachers"],
+    queryFn: () => adminListRemovedTeachers(),
+  });
+  const releaseMutation = useMutation({
+    mutationFn: (teacherId: string) => adminDeleteTeacher({ data: { teacherId } }),
+    onSuccess: () => {
+      toast.success("Old login removed", {
+        description: "The email and employee code can be used again.",
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+    },
+    onError: (error) =>
+      toast.error("Couldn't remove the old login", {
+        description: error instanceof Error ? error.message : undefined,
+      }),
+  });
+
+  const removed = removedQuery.data ?? [];
+  if (removedQuery.isLoading || removedQuery.isError || removed.length === 0) return null;
+
+  return (
+    <SectionCard
+      title="Previously removed teachers"
+      description="These teachers were deleted earlier but their logins may still be reserved. Remove an old login to free its email for a new account. Their history stays untouched."
+    >
+      <div className="space-y-3">
+        {removed.map((teacher) => (
+          <div key={teacher.id} className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium">{teacher.name}</p>
+              <p className="meta-text">
+                {teacher.employee_code ?? "No employee code"}
+                {teacher.deleted_at
+                  ? ` · removed ${new Date(teacher.deleted_at).toLocaleDateString()}`
+                  : ""}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={releaseMutation.isPending}
+              onClick={() => releaseMutation.mutate(teacher.id)}
+            >
+              {releaseMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              Remove old login
+            </Button>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
   );
 }
 
