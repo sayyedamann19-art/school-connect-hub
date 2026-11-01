@@ -1,16 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Award, Minus, Plus } from "lucide-react";
-import { useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getMyChildren, getStudentCharacterPoints } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/parent/character")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Character card — Dawn Breakers School" },
@@ -40,7 +41,8 @@ function formatDate(lang: string, value: string) {
 function CharacterPage() {
   const t = useT();
   const { lang } = useI18n();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
 
   const childrenQuery = useQuery({
     queryKey: ["parent", "children"],
@@ -48,13 +50,12 @@ function CharacterPage() {
   });
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChildId = activeId ?? childrenList[0]?.id ?? null;
-  const child = childrenList.find((row) => row.id === activeChildId) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const pointsQuery = useQuery({
-    queryKey: ["parent", "character-points", activeChildId],
-    enabled: Boolean(activeChildId),
-    queryFn: () => getStudentCharacterPoints({ data: { studentId: activeChildId! } }),
+    queryKey: ["parent", "character-points", child?.id],
+    enabled: Boolean(child),
+    queryFn: () => getStudentCharacterPoints({ data: { studentId: child!.id } }),
   });
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;
@@ -98,7 +99,7 @@ function CharacterPage() {
         <ChildSwitcher
           childrenList={childrenList}
           activeId={child.id}
-          onSelect={(id) => setActiveId(id)}
+          onSelect={(id) => void navigate({ search: withChild(id) })}
         />
       ) : null}
 

@@ -36,7 +36,7 @@ function ExamResultPage() {
   });
 
   const back = (
-    <Link to="/parent/academics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal">
+    <Link to="/parent/academics" search={{ child: studentId }} className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal">
       <ArrowLeft className="size-4" /> {t("Academics")}
     </Link>
   );

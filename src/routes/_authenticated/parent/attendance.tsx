@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { CountTile } from "@/components/common/stat-card";
@@ -10,9 +10,11 @@ import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing, TrendChart } from "@/components/parent/progress-visuals";
 import { Button } from "@/components/ui/button";
 import { getMyChildren, getStudentAttendance, type AttendanceRecord } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/parent/attendance")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Attendance — Dawn Breakers School" },
@@ -82,11 +84,15 @@ function AttendancePage() {
     queryFn: () => getMyChildren(),
   });
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
   const [monthOffset, setMonthOffset] = useState(0);
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChild = childrenList.find((child) => child.id === selectedId) ?? childrenList[0];
+  const activeChild = pickChild(search.child, childrenList) ?? childrenList[0];
+
+  // Reset the calendar month whenever the selected child changes.
+  useEffect(() => setMonthOffset(0), [activeChild?.id]);
 
   const attendanceQuery = useQuery({
     queryKey: ["parent", "attendance", activeChild?.id],
@@ -216,8 +222,7 @@ function AttendancePage() {
         }))}
         activeId={activeChild.id}
         onSelect={(id) => {
-          setSelectedId(id);
-          setMonthOffset(0);
+          void navigate({ search: withChild(id) });
         }}
       />
 

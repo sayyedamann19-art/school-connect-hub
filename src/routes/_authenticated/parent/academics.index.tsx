@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight } from "lucide-react";
-import { useState } from "react";
 import { useT } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getStudentAcademics } from "@/lib/academics.functions";
 import { getMyChildren } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 
 export const Route = createFileRoute("/_authenticated/parent/academics/")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Academics — Dawn Breakers School" },
@@ -25,10 +26,11 @@ export const Route = createFileRoute("/_authenticated/parent/academics/")({
 
 function AcademicsPage() {
   const t = useT();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
   const childrenQuery = useQuery({ queryKey: ["parent", "children"], queryFn: () => getMyChildren() });
   const childrenList = childrenQuery.data?.children ?? [];
-  const child = childrenList.find((c) => c.id === (activeId ?? childrenList[0]?.id)) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const academicsQuery = useQuery({
     queryKey: ["parent", "academics", child?.id],
@@ -54,7 +56,7 @@ function AcademicsPage() {
       <ChildSwitcher
         childrenList={childrenList.map((c) => ({ id: c.id, full_name: c.full_name, photoUrl: c.photoUrl }))}
         activeId={child.id}
-        onSelect={setActiveId}
+        onSelect={(id) => void navigate({ search: withChild(id) })}
       />
 
       {academicsQuery.isLoading ? (

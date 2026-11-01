@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { MessageSquareText } from "lucide-react";
-import { useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getMyChildren, getStudentNotes } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 
 export const Route = createFileRoute("/_authenticated/parent/feedback")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Teacher feedback — Dawn Breakers School" },
@@ -36,7 +37,8 @@ function formatDate(lang: string, value: string) {
 function FeedbackPage() {
   const t = useT();
   const { lang } = useI18n();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
 
   const childrenQuery = useQuery({
     queryKey: ["parent", "children"],
@@ -44,13 +46,12 @@ function FeedbackPage() {
   });
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChildId = activeId ?? childrenList[0]?.id ?? null;
-  const child = childrenList.find((row) => row.id === activeChildId) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const notesQuery = useQuery({
-    queryKey: ["parent", "student-notes", activeChildId],
-    enabled: Boolean(activeChildId),
-    queryFn: () => getStudentNotes({ data: { studentId: activeChildId! } }),
+    queryKey: ["parent", "student-notes", child?.id],
+    enabled: Boolean(child),
+    queryFn: () => getStudentNotes({ data: { studentId: child!.id } }),
   });
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;
@@ -95,7 +96,7 @@ function FeedbackPage() {
           photoUrl: row.photoUrl,
         }))}
         activeId={child.id}
-        onSelect={setActiveId}
+        onSelect={(id) => void navigate({ search: withChild(id) })}
       />
 
       {notesQuery.isLoading ? (
