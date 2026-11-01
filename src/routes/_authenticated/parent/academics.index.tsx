@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight } from "lucide-react";
-import { useState } from "react";
 import { useT } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getStudentAcademics } from "@/lib/academics.functions";
 import { getMyChildren } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 
 export const Route = createFileRoute("/_authenticated/parent/academics/")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Academics — Dawn Breakers School" },
