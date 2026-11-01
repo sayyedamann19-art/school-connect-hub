@@ -26,3 +26,12 @@ export function pickChild<T extends { id: string }>(
 export function withChild(id: string) {
   return (prev: ChildSearch): ChildSearch => ({ ...prev, child: id });
 }
+
+/** Read the currently selected child id from any router location's search. */
+export function childFromSearch(search: unknown): string | undefined {
+  if (typeof search === "object" && search !== null) {
+    const value = (search as Record<string, unknown>)["child"];
+    if (typeof value === "string") return value;
+  }
+  return undefined;
+}
