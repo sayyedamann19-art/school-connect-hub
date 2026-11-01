@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states
 import { getMyChildren } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/parent/")({
+  validateSearch: validateChildSearch,
   head: () => {
     const t = localeFor === undefined ? ((s: string) => s) : (s: string) => s; // dummy to satisfy hook rules if it were a component, but it's not. 
     // Wait, head can't use hooks. I'll use a static translation or skip head for now if it's too complex, but prompt asked for every visible string.
