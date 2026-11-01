@@ -1,16 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Award, Minus, Plus } from "lucide-react";
-import { useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { getMyChildren, getStudentCharacterPoints } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/parent/character")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Character card — Dawn Breakers School" },
