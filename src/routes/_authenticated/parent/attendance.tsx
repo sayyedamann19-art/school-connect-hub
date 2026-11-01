@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
@@ -84,7 +84,7 @@ function AttendancePage() {
     queryFn: () => getMyChildren(),
   });
 
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const [monthOffset, setMonthOffset] = useState(0);
 
@@ -222,7 +222,7 @@ function AttendancePage() {
         }))}
         activeId={activeChild.id}
         onSelect={(id) => {
-          void navigate({ search: withChild(id) });
+          void navigate({ to: "/parent/attendance", search: withChild(id) });
         }}
       />
 

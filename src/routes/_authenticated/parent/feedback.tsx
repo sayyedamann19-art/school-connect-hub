@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareText } from "lucide-react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
@@ -37,7 +37,7 @@ function formatDate(lang: string, value: string) {
 function FeedbackPage() {
   const t = useT();
   const { lang } = useI18n();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
 
   const childrenQuery = useQuery({
@@ -96,7 +96,7 @@ function FeedbackPage() {
           photoUrl: row.photoUrl,
         }))}
         activeId={child.id}
-        onSelect={(id) => void navigate({ search: withChild(id) })}
+        onSelect={(id) => void navigate({ to: "/parent/feedback", search: withChild(id) })}
       />
 
       {notesQuery.isLoading ? (

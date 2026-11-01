@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/parent/academics/")({
 
 function AcademicsPage() {
   const t = useT();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const childrenQuery = useQuery({ queryKey: ["parent", "children"], queryFn: () => getMyChildren() });
   const childrenList = childrenQuery.data?.children ?? [];
@@ -56,7 +56,7 @@ function AcademicsPage() {
       <ChildSwitcher
         childrenList={childrenList.map((c) => ({ id: c.id, full_name: c.full_name, photoUrl: c.photoUrl }))}
         activeId={child.id}
-        onSelect={(id) => void navigate({ search: withChild(id) })}
+        onSelect={(id) => void navigate({ to: "/parent/academics", search: withChild(id) })}
       />
 
       {academicsQuery.isLoading ? (
