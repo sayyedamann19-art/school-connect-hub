@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/parent/academics/")({
 
 function AcademicsPage() {
   const t = useT();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const childrenQuery = useQuery({ queryKey: ["parent", "children"], queryFn: () => getMyChildren() });
   const childrenList = childrenQuery.data?.children ?? [];

@@ -41,7 +41,7 @@ function formatDate(lang: string, value: string) {
 function CharacterPage() {
   const t = useT();
   const { lang } = useI18n();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
 
   const childrenQuery = useQuery({
