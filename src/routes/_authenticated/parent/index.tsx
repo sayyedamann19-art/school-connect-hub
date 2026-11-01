@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, CalendarCheck, ChevronRight, Heart, MessageSquareText, Sparkle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { greetingFor } from "@/lib/greeting";
@@ -62,7 +62,7 @@ function ParentHome() {
     const id = window.setInterval(() => setGreeting(greetingFor()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["parent", "children"],

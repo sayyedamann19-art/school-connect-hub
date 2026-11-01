@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareText } from "lucide-react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
