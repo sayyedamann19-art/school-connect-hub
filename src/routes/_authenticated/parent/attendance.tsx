@@ -84,11 +84,15 @@ function AttendancePage() {
     queryFn: () => getMyChildren(),
   });
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
   const [monthOffset, setMonthOffset] = useState(0);
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChild = childrenList.find((child) => child.id === selectedId) ?? childrenList[0];
+  const activeChild = pickChild(search.child, childrenList) ?? childrenList[0];
+
+  // Reset the calendar month whenever the selected child changes.
+  useEffect(() => setMonthOffset(0), [activeChild?.id]);
 
   const attendanceQuery = useQuery({
     queryKey: ["parent", "attendance", activeChild?.id],
@@ -218,8 +222,7 @@ function AttendancePage() {
         }))}
         activeId={activeChild.id}
         onSelect={(id) => {
-          setSelectedId(id);
-          setMonthOffset(0);
+          void navigate({ search: withChild(id) });
         }}
       />
 
