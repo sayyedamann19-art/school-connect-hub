@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useT, localeFor, useI18n } from "@/lib/i18n";
 
 import { CountTile } from "@/components/common/stat-card";
@@ -10,9 +10,11 @@ import { ChildSwitcher } from "@/components/parent/child-switcher";
 import { AttendanceRing, TrendChart } from "@/components/parent/progress-visuals";
 import { Button } from "@/components/ui/button";
 import { getMyChildren, getStudentAttendance, type AttendanceRecord } from "@/lib/school.functions";
+import { pickChild, validateChildSearch, withChild } from "@/lib/child-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/parent/attendance")({
+  validateSearch: validateChildSearch,
   head: () => ({
     meta: [
       { title: "Attendance — Dawn Breakers School" },
