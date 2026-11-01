@@ -41,7 +41,8 @@ function formatDate(lang: string, value: string) {
 function CharacterPage() {
   const t = useT();
   const { lang } = useI18n();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
 
   const childrenQuery = useQuery({
     queryKey: ["parent", "children"],
@@ -49,8 +50,7 @@ function CharacterPage() {
   });
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChildId = activeId ?? childrenList[0]?.id ?? null;
-  const child = childrenList.find((row) => row.id === activeChildId) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const pointsQuery = useQuery({
     queryKey: ["parent", "character-points", activeChildId],
@@ -99,7 +99,7 @@ function CharacterPage() {
         <ChildSwitcher
           childrenList={childrenList}
           activeId={child.id}
-          onSelect={(id) => setActiveId(id)}
+          onSelect={(id) => void navigate({ search: withChild(id) })}
         />
       ) : null}
 
