@@ -49,9 +49,9 @@ function FeedbackPage() {
   const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const notesQuery = useQuery({
-    queryKey: ["parent", "student-notes", activeChildId],
-    enabled: Boolean(activeChildId),
-    queryFn: () => getStudentNotes({ data: { studentId: activeChildId! } }),
+    queryKey: ["parent", "student-notes", child?.id],
+    enabled: Boolean(child),
+    queryFn: () => getStudentNotes({ data: { studentId: child!.id } }),
   });
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;

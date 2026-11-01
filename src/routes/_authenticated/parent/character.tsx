@@ -53,9 +53,9 @@ function CharacterPage() {
   const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const pointsQuery = useQuery({
-    queryKey: ["parent", "character-points", activeChildId],
-    enabled: Boolean(activeChildId),
-    queryFn: () => getStudentCharacterPoints({ data: { studentId: activeChildId! } }),
+    queryKey: ["parent", "character-points", child?.id],
+    enabled: Boolean(child),
+    queryFn: () => getStudentCharacterPoints({ data: { studentId: child!.id } }),
   });
 
   if (childrenQuery.isLoading) return <LoadingCards count={2} />;

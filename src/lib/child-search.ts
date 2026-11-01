@@ -10,7 +10,7 @@ export type ChildSearch = { child: string };
 
 /** Search-param validator (plain function; keeps the selection in the URL). */
 export function validateChildSearch(search: Record<string, unknown>): ChildSearch {
-  return { child: typeof search.child === "string" ? search.child : "" };
+  return { child: typeof search["child"] === "string" ? search["child"] : "" };
 }
 
 /** Resolve a requested child id against the parent's linked children. */
