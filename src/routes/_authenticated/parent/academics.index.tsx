@@ -26,10 +26,11 @@ export const Route = createFileRoute("/_authenticated/parent/academics/")({
 
 function AcademicsPage() {
   const t = useT();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
   const childrenQuery = useQuery({ queryKey: ["parent", "children"], queryFn: () => getMyChildren() });
   const childrenList = childrenQuery.data?.children ?? [];
-  const child = childrenList.find((c) => c.id === (activeId ?? childrenList[0]?.id)) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const academicsQuery = useQuery({
     queryKey: ["parent", "academics", child?.id],
@@ -55,7 +56,7 @@ function AcademicsPage() {
       <ChildSwitcher
         childrenList={childrenList.map((c) => ({ id: c.id, full_name: c.full_name, photoUrl: c.photoUrl }))}
         activeId={child.id}
-        onSelect={setActiveId}
+        onSelect={(id) => void navigate({ search: withChild(id) })}
       />
 
       {academicsQuery.isLoading ? (
