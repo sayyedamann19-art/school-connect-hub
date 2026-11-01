@@ -28,6 +28,7 @@ import { useStaffUpdates } from "@/hooks/use-staff-updates";
 import { UpdateNotifier } from "@/components/updates/update-notifier";
 import { initials } from "@/components/common/student-card";
 import { schoolMotto } from "@/lib/brand";
+import { childFromSearch } from "@/lib/child-search";
 import { cn } from "@/lib/utils";
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
@@ -58,16 +59,19 @@ function NavLinkItem({
   item,
   pathname,
   onNavigate,
+  childId,
 }: {
   item: NavItem;
   pathname: string;
   onNavigate?: (() => void) | undefined;
+  childId?: string;
 }) {
   const t = useT();
   const active = isItemActive(item, pathname);
   return (
     <Link
       to={item.to}
+      search={childId ? { child: childId } : undefined}
       onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
