@@ -184,6 +184,7 @@ function MobileNavBar() {
   const t = useT();
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const bottomChildId = useRouterState({ select: (state) => childFromSearch(state.location.search) });
   const items = primaryRole ? bottomNavByRole[primaryRole] : [];
 
   if (items.length === 0) return null;
