@@ -222,7 +222,7 @@ function AttendancePage() {
         }))}
         activeId={activeChild.id}
         onSelect={(id) => {
-          void navigate({ search: withChild(id) });
+          void navigate({ to: "/parent/attendance", search: withChild(id) });
         }}
       />
 

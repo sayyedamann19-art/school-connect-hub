@@ -56,7 +56,7 @@ function AcademicsPage() {
       <ChildSwitcher
         childrenList={childrenList.map((c) => ({ id: c.id, full_name: c.full_name, photoUrl: c.photoUrl }))}
         activeId={child.id}
-        onSelect={(id) => void navigate({ search: withChild(id) })}
+        onSelect={(id) => void navigate({ to: "/parent/academics", search: withChild(id) })}
       />
 
       {academicsQuery.isLoading ? (

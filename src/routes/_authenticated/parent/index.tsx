@@ -110,7 +110,7 @@ function ParentHome() {
         </div>
       </header>
 
-      <ChildSwitcher childrenList={childrenList} activeId={child.id} onSelect={(id) => void navigate({ search: withChild(id) })} />
+      <ChildSwitcher childrenList={childrenList} activeId={child.id} onSelect={(id) => void navigate({ to: "/parent", search: withChild(id) })} />
 
       <section className="card-surface overflow-hidden">
         <div className="flex items-center gap-4 border-b border-border p-5">

@@ -99,7 +99,7 @@ function CharacterPage() {
         <ChildSwitcher
           childrenList={childrenList}
           activeId={child.id}
-          onSelect={(id) => void navigate({ search: withChild(id) })}
+          onSelect={(id) => void navigate({ to: "/parent/character", search: withChild(id) })}
         />
       ) : null}
 
