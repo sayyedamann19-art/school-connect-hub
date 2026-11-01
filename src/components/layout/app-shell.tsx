@@ -64,14 +64,14 @@ function NavLinkItem({
   item: NavItem;
   pathname: string;
   onNavigate?: (() => void) | undefined;
-  childId?: string;
+  childId?: string | undefined;
 }) {
   const t = useT();
   const active = isItemActive(item, pathname);
   return (
     <Link
       to={item.to}
-      search={childId ? { child: childId } : undefined}
+      {...(childId ? { search: { child: childId } } : {})}
       onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
@@ -198,7 +198,7 @@ function MobileNavBar() {
             <Link
               key={item.to}
               to={item.to}
-              search={bottomChildId ? { child: bottomChildId } : undefined}
+              {...(bottomChildId ? { search: { child: bottomChildId } } : {})}
               className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[0.6875rem] font-semibold"
             >
               <span
