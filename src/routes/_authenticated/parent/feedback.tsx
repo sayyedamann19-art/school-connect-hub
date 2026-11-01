@@ -38,7 +38,8 @@ function formatDate(lang: string, value: string) {
 function FeedbackPage() {
   const t = useT();
   const { lang } = useI18n();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
 
   const childrenQuery = useQuery({
     queryKey: ["parent", "children"],
@@ -46,8 +47,7 @@ function FeedbackPage() {
   });
 
   const childrenList = childrenQuery.data?.children ?? [];
-  const activeChildId = activeId ?? childrenList[0]?.id ?? null;
-  const child = childrenList.find((row) => row.id === activeChildId) ?? null;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0] ?? null;
 
   const notesQuery = useQuery({
     queryKey: ["parent", "student-notes", activeChildId],
@@ -97,7 +97,7 @@ function FeedbackPage() {
           photoUrl: row.photoUrl,
         }))}
         activeId={child.id}
-        onSelect={setActiveId}
+        onSelect={(id) => void navigate({ search: withChild(id) })}
       />
 
       {notesQuery.isLoading ? (
