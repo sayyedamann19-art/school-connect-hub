@@ -98,7 +98,7 @@ function ParentHome() {
     );
   }
 
-  const child = childrenList.find((entry) => entry.id === activeId) ?? childrenList[0]!;
+  const child = pickChild(search.child, childrenList) ?? childrenList[0]!;
   const attendance = child.attendance;
 
   return (
@@ -110,7 +110,7 @@ function ParentHome() {
         </div>
       </header>
 
-      <ChildSwitcher childrenList={childrenList} activeId={child.id} onSelect={setActiveId} />
+      <ChildSwitcher childrenList={childrenList} activeId={child.id} onSelect={(id) => void navigate({ search: withChild(id) })} />
 
       <section className="card-surface overflow-hidden">
         <div className="flex items-center gap-4 border-b border-border p-5">
@@ -160,7 +160,7 @@ function ParentHome() {
       </section>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Link to="/parent/attendance" className="card-surface flex items-center gap-3.5 p-4">
+        <Link to="/parent/attendance" search={{ child: child.id }} className="card-surface flex items-center gap-3.5 p-4">
           <span className="flex size-10 items-center justify-center rounded-xl bg-teal-soft text-teal">
             <CalendarCheck className="size-5" strokeWidth={1.75} />
           </span>
@@ -170,7 +170,7 @@ function ParentHome() {
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
-        <Link to="/parent/character" className="card-surface flex items-center gap-3.5 p-4">
+        <Link to="/parent/character" search={{ child: child.id }} className="card-surface flex items-center gap-3.5 p-4">
           <span className="flex size-10 items-center justify-center rounded-xl bg-gold-soft text-warning-foreground">
             <Heart className="size-5" strokeWidth={1.75} />
           </span>
@@ -180,7 +180,7 @@ function ParentHome() {
           </span>
           <ChevronRight className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </Link>
-        <Link to="/parent/academics" className="card-surface flex items-center gap-3.5 p-4">
+        <Link to="/parent/academics" search={{ child: child.id }} className="card-surface flex items-center gap-3.5 p-4">
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
             <BookOpen className="size-5" strokeWidth={1.75} />
           </span>
@@ -195,7 +195,7 @@ function ParentHome() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="section-title">{t("Recent teacher feedback")}</h2>
-          <Link to="/parent/feedback" className="text-xs font-bold text-teal">
+          <Link to="/parent/feedback" search={{ child: child.id }} className="text-xs font-bold text-teal">
             {t("View all")}
           </Link>
         </div>
