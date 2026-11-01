@@ -90,6 +90,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const t = useT();
   const { primaryRole } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const childId = useRouterState({ select: (state) => childFromSearch(state.location.search) });
   const items = primaryRole ? navByRole[primaryRole] : [];
   const grouped = items.some((item) => item.group);
 
@@ -97,7 +98,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     return (
       <nav className="space-y-1">
         {items.map((item) => (
-          <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+          <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} childId={childId} />
         ))}
       </nav>
     );
@@ -123,14 +124,14 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             {t(group.name)}
           </p>
           {group.items.map((item) => (
-            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} childId={childId} />
           ))}
         </div>
       ))}
       {ungrouped.length ? (
         <div className="space-y-1 border-t border-sidebar-border pt-4">
           {ungrouped.map((item) => (
-            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+            <NavLinkItem key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} childId={childId} />
           ))}
         </div>
       ) : null}
@@ -196,6 +197,7 @@ function MobileNavBar() {
             <Link
               key={item.to}
               to={item.to}
+              search={bottomChildId ? { child: bottomChildId } : undefined}
               className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[0.6875rem] font-semibold"
             >
               <span
