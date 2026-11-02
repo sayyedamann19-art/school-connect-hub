@@ -4,6 +4,7 @@ import { GraduationCap, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { TeacherDetailsDialog } from "@/components/admin/teacher-details-dialog";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/_authenticated/admin/teachers")({
 function TeachersAdmin() {
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<AdminTeacher | null>(null);
   const [deleting, setDeleting] = useState<AdminTeacher | null>(null);
 
@@ -183,6 +185,9 @@ function TeachersAdmin() {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" aria-label={`View details for ${teacher.name}`} onClick={() => setViewingId(teacher.id)}>
+                    View details
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setAssigning(teacher)}>
                     <Plus className="mr-2 size-4" />
                     Assign class
@@ -203,6 +208,11 @@ function TeachersAdmin() {
         </div>
       )}
 
+      <TeacherDetailsDialog
+        teacher={(teachersQuery.data ?? []).find((teacher) => teacher.id === viewingId) ?? null}
+        classes={classesQuery.data ?? []}
+        onClose={() => setViewingId(null)}
+      />
       <AddTeacherDialog open={adding} onClose={() => setAdding(false)} />
       {deleting ? (
         <Dialog open onOpenChange={(next) => (next ? null : setDeleting(null))}>
@@ -417,3 +427,4 @@ function AssignClassDialog({
     </Dialog>
   );
 }
+
