@@ -20,6 +20,19 @@ function installStaleChunkReload() {
     event.preventDefault();
     reloadOnce();
   });
+  // An old tab running a previously deployed bundle can hit a TanStack route
+  // error like "Cannot read properties of undefined (reading 'component')".
+  // Reload once so the tab picks up the current bundle, then never again.
+  window.addEventListener("error", (event) => {
+    if (!/Cannot read properties of undefined \(reading 'component'\)/.test(event.message ?? "")) return;
+    if (sessionStorage.getItem("component-error-reload-at")) {
+      event.preventDefault?.();
+      return;
+    }
+    sessionStorage.setItem("component-error-reload-at", String(Date.now()));
+    event.preventDefault?.();
+    window.location.reload();
+  });
   window.addEventListener("unhandledrejection", (event) => {
     const msg = String((event.reason as Error | undefined)?.message ?? event.reason ?? "");
     if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(msg)) {
