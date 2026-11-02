@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 
 import { StudentDeleteDialog } from "@/components/admin/student-delete-dialog";
+import { StaffStudentRecordDialog } from "@/components/students/staff-student-record-dialog";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
@@ -74,6 +75,7 @@ function StudentsAdmin() {
   const [search, setSearch] = useState("");
   const initialClass = Route.useSearch().classId;
   const [classId, setClassId] = useState<string>(initialClass ?? "all");
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Student | null>(null);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Student | null>(null);
@@ -224,6 +226,7 @@ function StudentsAdmin() {
                       />
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button variant="outline" size="sm" aria-label={`View record for ${student.full_name}`} onClick={() => setViewingId(student.id)}>View record</Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditing(student)}>
                         <Pencil className="mr-2 size-4" />
                         Edit
@@ -289,6 +292,7 @@ function StudentsAdmin() {
                     </dd>
                   </div>
                   <div className="flex flex-wrap items-end justify-end gap-2">
+                    <Button variant="outline" size="sm" aria-label={`View record for ${student.full_name}`} onClick={() => setViewingId(student.id)}>View record</Button>
                     <Button variant="ghost" size="sm" onClick={() => setEditing(student)}>
                       <Pencil className="mr-2 size-4" />
                       Edit
@@ -305,6 +309,7 @@ function StudentsAdmin() {
         </SectionCard>
       )}
 
+      {viewingId ? <StaffStudentRecordDialog key={viewingId} studentId={viewingId} onClose={() => setViewingId(null)} /> : null}
       <StudentDeleteDialog student={deleting} onClose={() => setDeleting(null)} />
       <EditStudentDialog
         student={editing}
@@ -656,4 +661,3 @@ function Field({
     </div>
   );
 }
-

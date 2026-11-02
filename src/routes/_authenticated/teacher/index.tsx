@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { StaffStudentRecordDialog } from "@/components/students/staff-student-record-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, GraduationCap, Users } from "lucide-react";
@@ -49,6 +52,8 @@ type StudentRow = {
 
 function TeacherArea() {
   const queryClient = useQueryClient();
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const [classFilter, setClassFilter] = useState("all");
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["teacher", "overview"],
     queryFn: () => getTeacherOverview(),
@@ -188,11 +193,18 @@ function TeacherArea() {
 
       <SectionCard
         title="Students"
-        description="Open Attendance, Feedback or Character to record for these students."
+        description="View each student’s full record. Use Attendance, Feedback or Character to make permitted edits."
       >
+        <div className="mb-4 max-w-xs"><Select value={classFilter} onValueChange={setClassFilter}>
+          <SelectTrigger aria-label="Filter students by class"><SelectValue placeholder="All assigned classes" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All assigned classes</SelectItem>
+            {[...classNameById].map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+          </SelectContent>
+        </Select></div>
         <DataTable<StudentRow>
           columns={[
             { key: "name", header: "Student", cell: (row) => row.full_name },
+            { key: "record", header: "Record", cell: (row) => <Button variant="outline" size="sm" aria-label={`View record for ${row.full_name}`} onClick={() => setViewingId(row.id)}>View record</Button> },
             { key: "roll", header: "Roll no.", cell: (row) => row.roll_number ?? "—" },
             {
               key: "class",
@@ -219,12 +231,13 @@ function TeacherArea() {
               ),
             },
           ]}
-          rows={students}
+          rows={classFilter === "all" ? students : students.filter((student) => student.class_id === classFilter)}
           getRowKey={(row) => row.id}
           emptyTitle="No students in your classes yet"
           emptyDescription="Students appear here once they are added to a class you teach."
         />
       </SectionCard>
+      {viewingId ? <StaffStudentRecordDialog key={viewingId} studentId={viewingId} onClose={() => setViewingId(null)} /> : null}
     </div>
   );
 }
