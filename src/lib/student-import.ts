@@ -1,3 +1,5 @@
+import { normaliseBirthDate, requiredStudentDetails } from "@/lib/student-details";
+
 /**
  * Shared model for the Excel student importer: official column contract,
  * row validation and the create/update decision. Used by the browser
@@ -9,6 +11,11 @@ export const IMPORT_COLUMNS = [
   "Roll Number",
   "GR Number",
   "Student Name",
+  "Date of Birth",
+  "Age (as of today)",
+  "Mother’s Name",
+  "Address",
+  "Contact Number",
   "Height",
   "Weight",
   "Class",
@@ -20,6 +27,11 @@ export const IMPORT_COLUMNS = [
 export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
 
 export const REQUIRED_COLUMNS: ImportColumn[] = [
+  "Roll Number",
+  "Date of Birth",
+  "Mother’s Name",
+  "Address",
+  "Contact Number",
   "GR Number",
   "Student Name",
   "Class",
@@ -36,7 +48,11 @@ export type ImportRow = {
   rowNumber: number;
   grNumber: string;
   fullName: string;
-  rollNumber: string | null;
+  rollNumber: string;
+  dateOfBirth: string;
+  motherName: string;
+  address: string;
+  contactNumber: string;
   className: string;
   division: string | null;
   heightCm: number | null;
@@ -101,7 +117,18 @@ export function validateRows(raw: RawRow[], context: ImportContext): ValidatedRo
     const division = get("Division") || (get("Class") ? null : (target?.division ?? null));
     const parentName = get("Parent Name");
     const phone = normalisePhone(get("Parent Phone Number"));
-    const rollNumber = get("Roll Number") || null;
+    const rollNumber = get("Roll Number");
+    const dateOfBirth = normaliseBirthDate(get("Date of Birth"));
+    const motherName = get("Mother’s Name");
+    const address = get("Address");
+    const contactResult = requiredStudentDetails.contactNumber.safeParse(get("Contact Number"));
+    const contactNumber = contactResult.success ? contactResult.data : get("Contact Number");
+    const details = { rollNumber, dateOfBirth, motherName, address, contactNumber };
+    for (const [key, schema] of Object.entries(requiredStudentDetails)) {
+      const result = schema.safeParse(details[key as keyof typeof details]);
+      if (!result.success) errors.push(result.error.issues[0]!.message);
+    }
+
 
     if (!grNumber) errors.push("GR Number is required");
     else if (!GR_RE.test(grNumber)) errors.push("GR Number may only contain letters, numbers, - and /");
@@ -158,6 +185,10 @@ export function validateRows(raw: RawRow[], context: ImportContext): ValidatedRo
       grNumber,
       fullName,
       rollNumber,
+      dateOfBirth,
+      motherName,
+      address,
+      contactNumber,
       className,
       division,
       heightCm: typeof height === "number" ? height : null,

@@ -14,6 +14,8 @@ import {
   type RecordSection,
 } from "@/lib/staff-student-records.functions";
 
+import { ageLabel } from "@/lib/student-details";
+
 const tabs = [
   ["profile", "Profile"],
   ["attendance", "Attendance"],
@@ -121,6 +123,10 @@ export function StaffStudentRecordDialog({
                       ],
                       ["Academic year", student.class?.academic_year],
                       ["Date of birth", date(student.date_of_birth)],
+                      ["Age", ageLabel(student.date_of_birth)],
+                      ["Mother’s name", student.mother_name],
+                      ["Address", student.address],
+                      ["Contact number", student.contact_number],
                       ["Height", student.height_cm == null ? null : `${student.height_cm} cm`],
                       ["Weight", student.weight_kg == null ? null : `${student.weight_kg} kg`],
                       ["Status", student.is_active ? "Studying" : "Left / inactive"],

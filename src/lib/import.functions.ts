@@ -97,7 +97,7 @@ export const getImportContext = createServerFn({ method: "GET" })
 
 const rowSchema = z.object({
   rowNumber: z.number().int().positive(),
-  values: z.record(z.string(), z.string().max(200)),
+  values: z.record(z.string(), z.string().max(500)),
 });
 
 /** Applies a validated import. Rows with errors are skipped, never written. */

@@ -134,6 +134,13 @@
       "when": 1793644200000,
       "tag": "0018_teacher_employment_details",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793650000000,
+      "tag": "0019_student_registration_details",
+      "breakpoints": true
     }
   ]
 }

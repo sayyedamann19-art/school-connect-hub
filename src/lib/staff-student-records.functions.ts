@@ -36,7 +36,7 @@ async function staffStudent(sb: Client, userId: string, studentId: string) {
   const result = await sb
     .from("students")
     .select(
-      "id, full_name, gr_number, roll_number, date_of_birth, height_cm, weight_kg, photo_path, is_active, class:classes(name, division, academic_year)",
+      "id, full_name, gr_number, roll_number, date_of_birth, mother_name, address, contact_number, height_cm, weight_kg, photo_path, is_active, class:classes(name, division, academic_year)",
     )
     .eq("id", studentId)
     .maybeSingle();

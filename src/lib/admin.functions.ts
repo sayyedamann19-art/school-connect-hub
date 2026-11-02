@@ -12,6 +12,8 @@ async function assertAdmin(supabase: { rpc: (name: "is_admin") => Promise<{ data
   if (!data) throw new Error("Only administrators can do this");
 }
 
+import { requiredStudentDetails } from "@/lib/student-details";
+
 const classInput = z.object({
   name: z.string().trim().min(1).max(40),
   division: z
@@ -375,12 +377,7 @@ export const adminCreateStudent = createServerFn({ method: "POST" })
           .trim()
           .regex(/^[A-Za-z0-9/-]{3,32}$/, "GR number can use letters, numbers, / and -"),
         classId: z.string().uuid().nullable().optional(),
-        rollNumber: z.string().trim().max(16).optional(),
-        dateOfBirth: z
-          .string()
-          .trim()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .optional(),
+        ...requiredStudentDetails,
         heightCm: z.number().positive().max(300).optional(),
         weightKg: z.number().positive().max(300).optional(),
         parentName: z.string().trim().max(120).optional(),

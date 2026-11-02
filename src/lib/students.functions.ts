@@ -6,6 +6,8 @@ import type { TablesUpdate } from "@/integrations/supabase/types";
 import { isManageableParent, type Role } from "@/lib/account-rules";
 import { parentAlias } from "@/lib/parent-domain";
 
+import { birthDate, motherName, studentAddress, contactNumber } from "@/lib/student-details";
+
 const optionalText = (max: number) =>
   z
     .string()
@@ -43,7 +45,7 @@ export const listManagedStudents = createServerFn({ method: "GET" })
     let query = context.supabase
       .from("students")
       .select(
-        "id, full_name, gr_number, roll_number, date_of_birth, height_cm, weight_kg, is_active, photo_path, class_id, class:classes(id, name, division, academic_year)",
+        "id, full_name, gr_number, roll_number, date_of_birth, mother_name, address, contact_number, height_cm, weight_kg, is_active, photo_path, class_id, class:classes(id, name, division, academic_year)",
       )
       .order("full_name")
       .limit(300);
@@ -103,7 +105,10 @@ const updateSchema = z.object({
   classId: z.string().uuid().nullable().optional(),
   heightCm: z.number().positive().max(300).nullable().optional(),
   weightKg: z.number().positive().max(300).nullable().optional(),
-  dateOfBirth: optionalText(10),
+  dateOfBirth: z.union([birthDate, z.literal("").transform(() => null)]).nullable().optional(),
+  motherName: z.union([motherName, z.literal("").transform(() => null)]).nullable().optional(),
+  address: z.union([studentAddress, z.literal("").transform(() => null)]).nullable().optional(),
+  contactNumber: z.union([contactNumber, z.literal("").transform(() => null)]).nullable().optional(),
   isActive: z.boolean().optional(),
   photoPath: optionalText(300),
   parentName: optionalText(120),
@@ -134,6 +139,9 @@ export const updateStudent = createServerFn({ method: "POST" })
       weight_kg: data.weightKg ?? null,
       date_of_birth: data.dateOfBirth ?? null,
     };
+    if (data.motherName !== undefined) patch.mother_name = data.motherName;
+    if (data.address !== undefined) patch.address = data.address;
+    if (data.contactNumber !== undefined) patch.contact_number = data.contactNumber;
     if (data.classId !== undefined) patch['class_id'] = data.classId;
     if (data.isActive !== undefined) patch['is_active'] = data.isActive;
     if (data.photoPath !== undefined) patch['photo_path'] = data.photoPath;

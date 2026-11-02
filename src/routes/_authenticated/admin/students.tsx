@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
+import { requiredStudentDetails, schoolToday } from "@/lib/student-details";
+import { StudentRegistrationFields } from "@/components/students/student-registration-fields";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -341,6 +344,9 @@ function AddStudentDialog({
     rollNumber: "",
     classId: "none",
     dateOfBirth: "",
+    motherName: "",
+    address: "",
+    contactNumber: "",
     heightCm: "",
     weightKg: "",
     parentName: "",
@@ -360,8 +366,7 @@ function AddStudentDialog({
           fullName: form.fullName.trim(),
           grNumber: form.grNumber.trim(),
           classId: form.classId === "none" ? null : form.classId,
-          ...(form.rollNumber.trim() ? { rollNumber: form.rollNumber.trim() } : {}),
-          ...(form.dateOfBirth ? { dateOfBirth: form.dateOfBirth } : {}),
+          ...z.object(requiredStudentDetails).parse(form),
           ...(numberOrUndefined(form.heightCm) ? { heightCm: numberOrUndefined(form.heightCm)! } : {}),
           ...(numberOrUndefined(form.weightKg) ? { weightKg: numberOrUndefined(form.weightKg)! } : {}),
           ...(form.parentName.trim() ? { parentName: form.parentName.trim() } : {}),
@@ -397,18 +402,18 @@ function AddStudentDialog({
           <DialogTitle>New student</DialogTitle>
           <DialogDescription>
             Adding a parent phone number creates or reuses that parent's login and links this child
-            to it.
+            to it. Fields marked * are required. Age is calculated automatically.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Student name" className="sm:col-span-2">
+          <Field label="Student name *" className="sm:col-span-2">
             <Input value={form.fullName} onChange={(event) => set("fullName")(event.target.value)} />
           </Field>
-          <Field label="GR number">
+          <Field label="GR number *">
             <Input value={form.grNumber} onChange={(event) => set("grNumber")(event.target.value)} />
           </Field>
-          <Field label="Roll number">
+          <Field label="Roll number *">
             <Input
               value={form.rollNumber}
               onChange={(event) => set("rollNumber")(event.target.value)}
@@ -430,13 +435,16 @@ function AddStudentDialog({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Date of birth">
+          <Field label="Date of birth *">
             <Input
               type="date"
+              max={schoolToday()}
+              aria-label="Date of birth"
               value={form.dateOfBirth}
               onChange={(event) => set("dateOfBirth")(event.target.value)}
             />
           </Field>
+          <StudentRegistrationFields values={form} dateOfBirth={form.dateOfBirth} required onChange={(key, value) => set(key)(value)} />
           <Field label="Height (cm)">
             <Input
               inputMode="decimal"
@@ -471,7 +479,7 @@ function AddStudentDialog({
             Cancel
           </Button>
           <Button
-            disabled={mutation.isPending || !form.fullName.trim() || !form.grNumber.trim()}
+            disabled={mutation.isPending || form.fullName.trim().length < 2 || !/^[A-Za-z0-9/-]{3,32}$/.test(form.grNumber.trim()) || !z.object(requiredStudentDetails).safeParse(form).success}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
@@ -588,10 +596,17 @@ function EditStudentDialog({
           <Field label="Date of birth">
             <Input
               type="date"
+              max={schoolToday()}
+              aria-label="Date of birth"
               value={current("dateOfBirth", student.date_of_birth ?? "")}
               onChange={(event) => setForm((prev) => ({ ...prev, dateOfBirth: event.target.value }))}
             />
           </Field>
+          <StudentRegistrationFields
+            values={{ motherName: current("motherName", student.mother_name ?? ""), address: current("address", student.address ?? ""), contactNumber: current("contactNumber", student.contact_number ?? "") }}
+            dateOfBirth={current("dateOfBirth", student.date_of_birth ?? "")}
+            onChange={(key, value) => setForm(prev => ({ ...prev, [key]: value }))}
+          />
           <Field label="Parent name">
             <Input
               value={current("parentName", student.parent?.fullName ?? "")}
@@ -630,6 +645,9 @@ function EditStudentDialog({
                     current("weightKg", student.weight_kg ? String(student.weight_kg) : ""),
                   ),
                   dateOfBirth: current("dateOfBirth", student.date_of_birth ?? ""),
+                  motherName: current("motherName", student.mother_name ?? ""),
+                  address: current("address", student.address ?? ""),
+                  contactNumber: current("contactNumber", student.contact_number ?? ""),
                   parentName: current("parentName", student.parent?.fullName ?? "").trim(),
                   ...(phone ? { parentPhone: phone } : {}),
                 },

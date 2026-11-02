@@ -26,6 +26,8 @@ import { downloadStudentTemplate, parseStudentWorkbook } from "@/lib/excel-workb
 import { getImportContext, runStudentImport } from "@/lib/import.functions";
 import { summarise, validateRows, type RawRow, type ValidatedRow } from "@/lib/student-import";
 
+import { ageLabel } from "@/lib/student-details";
+
 type Stage = "upload" | "preview" | "done";
 
 type ImportResult = Awaited<ReturnType<typeof runStudentImport>>;
@@ -232,6 +234,7 @@ export function StudentImportWizard({
                     <TableHead>Row</TableHead>
                     <TableHead>GR Number</TableHead>
                     <TableHead>Student</TableHead>
+                    <TableHead>Registration details</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Parent</TableHead>
                     <TableHead>Status</TableHead>
@@ -243,6 +246,13 @@ export function StudentImportWizard({
                       <TableCell className="text-muted-foreground">{entry.row.rowNumber}</TableCell>
                       <TableCell className="font-medium">{entry.row.grNumber || "—"}</TableCell>
                       <TableCell>{entry.row.fullName || "—"}</TableCell>
+                      <TableCell className="min-w-64 whitespace-normal">
+                        <p>Roll: {entry.row.rollNumber || "—"} · DOB: {entry.row.dateOfBirth || "—"}</p>
+                        <p>{ageLabel(entry.row.dateOfBirth)}</p>
+                        <p>Mother: {entry.row.motherName || "—"}</p>
+                        <p className="break-words">Address: {entry.row.address || "—"}</p>
+                        <p>Contact: {entry.row.contactNumber || "—"}</p>
+                      </TableCell>
                       <TableCell>
                         {entry.row.className || "—"}
                         {entry.row.division ? ` ${entry.row.division}` : ""}

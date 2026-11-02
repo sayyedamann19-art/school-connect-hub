@@ -5,7 +5,7 @@ function raw(values: Partial<Record<(typeof IMPORT_COLUMNS)[number], string>>): 
   const base = Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, ""])) as RawRow["values"];
   return {
     rowNumber: 2,
-    values: { ...base, "GR Number": "202600999", "Student Name": "Test Child", "Parent Name": "P", "Parent Phone Number": "9876543210", ...values },
+    values: { ...base, "GR Number": "202600999", "Student Name": "Test Child", "Roll Number": "12", "Date of Birth": "2017-05-12", "Mother’s Name": "Mother", "Address": "Nashik", "Contact Number": "9876543210", "Parent Name": "P", "Parent Phone Number": "9876543210", ...values },
   };
 }
 const ctx = { existingByGr: {}, allowedClassKeys: ["class 5|a"], targetClass: { name: "Class 5", division: "A" } };

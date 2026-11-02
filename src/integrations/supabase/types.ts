@@ -572,6 +572,9 @@ export type Database = {
         Row: {
           class_id: string | null
           created_at: string
+          mother_name: string | null
+          address: string | null
+          contact_number: string | null
           date_of_birth: string | null
           full_name: string
           gr_number: string
@@ -586,6 +589,9 @@ export type Database = {
         Insert: {
           class_id?: string | null
           created_at?: string
+          mother_name?: string | null
+          address?: string | null
+          contact_number?: string | null
           date_of_birth?: string | null
           full_name: string
           gr_number: string
@@ -600,6 +606,9 @@ export type Database = {
         Update: {
           class_id?: string | null
           created_at?: string
+          mother_name?: string | null
+          address?: string | null
+          contact_number?: string | null
           date_of_birth?: string | null
           full_name?: string
           gr_number?: string

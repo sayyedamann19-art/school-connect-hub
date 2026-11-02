@@ -24,6 +24,8 @@ import {
 import { parentAlias } from "@/lib/parent-domain";
 import { teacherJoiningDate, teacherQualification } from "@/lib/teacher-details-input";
 
+import { requiredStudentDetails } from "@/lib/student-details";
+
 export class AccountError extends Error {
   constructor(
     message: string,
@@ -51,8 +53,7 @@ const schemas = {
     fullName: z.string().trim().min(2).max(120),
     grNumber: z.string().trim().regex(/^[A-Za-z0-9/-]{3,32}$/, "GR number can use letters, numbers, / and -"),
     classId: z.string().uuid().nullable().optional(),
-    rollNumber: z.string().trim().max(16).optional(),
-    dateOfBirth: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ...requiredStudentDetails,
     heightCm: z.number().positive().max(300).optional(),
     weightKg: z.number().positive().max(300).optional(),
     parentName: z.string().trim().max(120).optional(),
@@ -67,7 +68,7 @@ const schemas = {
           rowNumber: z.number().int().positive(),
           grNumber,
           fullName: z.string().trim().min(1).max(120),
-          rollNumber: z.string().trim().max(16).nullable(),
+          ...requiredStudentDetails,
           className: z.string().trim().min(1).max(40),
           division: z.string().trim().max(10).nullable(),
           heightCm: z.number().positive().max(300).nullable(),
@@ -323,6 +324,10 @@ async function importRows(
         full_name: row.fullName,
         gr_number: row.grNumber,
         roll_number: row.rollNumber,
+        date_of_birth: row.dateOfBirth,
+        mother_name: row.motherName,
+        address: row.address,
+        contact_number: row.contactNumber,
         class_id: classId,
         height_cm: row.heightCm,
         weight_kg: row.weightKg,
@@ -481,7 +486,10 @@ export async function executeAccountAction(
           gr_number: d.grNumber,
           class_id: d.classId ?? null,
           roll_number: d.rollNumber ?? null,
-          date_of_birth: d.dateOfBirth ?? null,
+          date_of_birth: d.dateOfBirth,
+          mother_name: d.motherName,
+          address: d.address,
+          contact_number: d.contactNumber,
           height_cm: d.heightCm ?? null,
           weight_kg: d.weightKg ?? null,
         })
