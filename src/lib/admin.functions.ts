@@ -554,7 +554,7 @@ export const adminCreateParent = createServerFn({ method: "POST" })
 export const adminDeleteParent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ parentId: z.string().uuid(), unlinkSoleChildren: z.boolean().default(false) }).parse(input),
+    z.object({ parentId: z.string().uuid(), unlinkSoleChildren: z.boolean().default(false), requireUnlinked: z.boolean().default(false) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -570,6 +570,9 @@ export const adminDeleteParent = createServerFn({ method: "POST" })
       .select("student_id, student:students(full_name)")
       .eq("parent_id", data.parentId);
     if (error) throw new Error("Couldn't load this parent's children");
+    if (data.requireUnlinked && (links ?? []).length) {
+      throw new Error("This parent is now linked to a student. Their access was kept.");
+    }
     const ids = (links ?? []).map((l) => l.student_id);
     const { data: others } = ids.length
       ? await sb.from("parent_students").select("student_id").in("student_id", ids).neq("parent_id", data.parentId)
@@ -719,3 +722,4 @@ export const adminAttendanceReport = createServerFn({ method: "GET" })
       },
     };
   });
+

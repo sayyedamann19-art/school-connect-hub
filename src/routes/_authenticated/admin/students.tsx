@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, Pencil, Plus, Upload } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 
+import { StudentDeleteDialog } from "@/components/admin/student-delete-dialog";
 import { PageHeader, SectionCard } from "@/components/common/section-card";
 import { ErrorState, LoadingCards } from "@/components/common/states";
 import { RoleGate } from "@/components/layout/role-gate";
@@ -75,6 +76,7 @@ function StudentsAdmin() {
   const [classId, setClassId] = useState<string>(initialClass ?? "all");
   const [editing, setEditing] = useState<Student | null>(null);
   const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState<Student | null>(null);
 
   const classesQuery = useQuery({ queryKey: ["classes"], queryFn: () => listClasses() });
   const studentsQuery = useQuery({
@@ -226,6 +228,10 @@ function StudentsAdmin() {
                         <Pencil className="mr-2 size-4" />
                         Edit
                       </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive" aria-label={`Delete ${student.full_name}`} onClick={() => setDeleting(student)}>
+                        <Trash2 className="mr-2 size-4" />
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -282,10 +288,14 @@ function StudentsAdmin() {
                       {student.parent?.phone ?? "—"}
                     </dd>
                   </div>
-                  <div className="flex items-end justify-end">
+                  <div className="flex flex-wrap items-end justify-end gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setEditing(student)}>
                       <Pencil className="mr-2 size-4" />
                       Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive" aria-label={`Delete ${student.full_name}`} onClick={() => setDeleting(student)}>
+                      <Trash2 className="mr-2 size-4" />
+                      Delete
                     </Button>
                   </div>
                 </dl>
@@ -295,6 +305,7 @@ function StudentsAdmin() {
         </SectionCard>
       )}
 
+      <StudentDeleteDialog student={deleting} onClose={() => setDeleting(null)} />
       <EditStudentDialog
         student={editing}
         classes={classesQuery.data ?? []}
@@ -645,3 +656,4 @@ function Field({
     </div>
   );
 }
+
