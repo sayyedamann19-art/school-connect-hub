@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { ClassAttendanceRegister } from "@/components/students/class-attendance-register";
 import { CalendarCheck } from "lucide-react";
 import { useState } from "react";
 
@@ -120,6 +121,8 @@ function AttendanceReports() {
               </div>
             </div>
           </SectionCard>
+
+          <ClassAttendanceRegister key={selectedClass} classId={selectedClass} />
 
           {reportQuery.isLoading ? (
             <LoadingCards count={3} />

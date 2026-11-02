@@ -298,7 +298,7 @@
 .marksheet-print { display: none; }
 @media print {
   @page { size: A4; margin: 14mm; }
-  body > *:not(.marksheet-print) { display: none !important; }
+  body > *:not(.marksheet-print):not(.attendance-register-print) { display: none !important; }
   .marksheet-print { display: block; color: #000; background: #fff; font-size: 11pt; }
   .marksheet-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .marksheet-print table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
@@ -323,4 +323,43 @@
     animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important; scroll-behavior: auto !important;
   }
+}
+
+/* Class attendance register: scoped so existing A4 marksheets keep their own page size. */
+.attendance-register-print { display: none; }
+.attendance-register-preview { width: max-content; margin: 0 auto; }
+.attendance-register-page { width: 400mm; padding: 8mm 0; box-sizing: border-box; background: white; color: #182331; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.35; }
+.attendance-register-preview .attendance-register-page { padding: 8mm; width: 416mm; margin-bottom: 6mm; box-shadow: 0 1px 5px #0002; }
+.attendance-register-page table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.attendance-register-page th, .attendance-register-page td { border: .2mm solid #8d959e; padding: 2.5mm 1mm; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
+.attendance-register-page thead th { background: #eef0f2; font-weight: 700; font-size: 8pt; padding-left: .3mm; padding-right: .3mm; overflow-wrap: normal; word-break: normal; }
+.attendance-register-page .register-title-row th { border: 0; background: white; padding: 0 0 5mm; font-weight: 400; }
+.attendance-register-page h2 { margin: 0 0 1.5mm; font-size: 19pt; font-weight: 700; letter-spacing: .3pt; }
+.attendance-register-page h3 { margin: 0 0 2mm; font-size: 13pt; font-weight: 700; }
+.attendance-register-page .register-title-row p { font-size: 10pt; margin: 0; }
+.attendance-register-page .register-title-row p span { display: inline-block; margin-left: 8mm; }
+.attendance-register-page .register-meta { display: flex; justify-content: space-between; margin-top: 4mm; font-size: 9pt; }
+.attendance-register-page .register-profile { text-align: left; }
+.attendance-register-page tbody tr:not(.register-total) { height: 14mm; }
+.attendance-register-page .register-day, .attendance-register-page .register-mark { padding: 1.5mm .15mm; font-size: 7.5pt; overflow-wrap: normal; }
+.attendance-register-page .register-day small { display: block; font-size: 6.5pt; font-weight: 400; margin-top: 1mm; }
+.attendance-register-page .register-mark-A { background: #f4e8e8; font-weight: 700; }
+.attendance-register-page .register-mark-U { color: #555; }
+.attendance-register-page .register-mark-future { background: #f2f3f4; color: #666; }
+.attendance-register-page .register-total { background: #eef0f2; font-weight: 700; }
+.attendance-register-page .register-total th { text-align: right; padding-right: 4mm; }
+.attendance-register-page .register-footer-row td { border: 0; padding: 4mm 0 0; text-align: left; }
+.attendance-register-page .register-key { font-size: 9pt; margin: 0 0 1.5mm; }
+.attendance-register-page .register-calculation { font-size: 8.5pt; margin: 0; }
+.attendance-register-page .register-signatures { display: flex; justify-content: space-between; gap: 15mm; padding-top: 15mm; font-size: 9pt; }
+.attendance-register-page .register-signatures span { border-top: .2mm solid #8d959e; padding-top: 2mm; flex: 1; }
+@media print {
+  @page attendance-register { size: A3 landscape; margin: 10mm; }
+  .attendance-register-print { display: block !important; }
+  .attendance-register-print .attendance-register-page { page: attendance-register; width: 400mm; padding: 0; break-after: page; }
+  .attendance-register-print .attendance-register-page:last-child { break-after: auto; }
+  .attendance-register-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .attendance-register-print thead { display: table-header-group; }
+  .attendance-register-print tfoot { display: table-footer-group; }
+  .attendance-register-print tr { break-inside: avoid; page-break-inside: avoid; }
 }
