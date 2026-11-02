@@ -367,7 +367,7 @@ async function deleteTeacher(sb: Admin, caller: { userId: string }, teacherId: s
     throw new AccountError("You cannot delete your own teacher access", 403);
   }
   const targetRoles = await rolesOf(sb, teacher.profile_id);
-  if (!canRemoveTeacherLogin(targetRoles)) {
+  if (!canRemoveTeacherLogin(targetRoles, teacher.deleted_at !== null)) {
     throw new AccountError(
       targetRoles.includes("admin")
         ? "This account is an administrator and cannot be deleted here"
@@ -381,7 +381,7 @@ async function deleteTeacher(sb: Admin, caller: { userId: string }, teacherId: s
 
   const { error: tErr } = await sb
     .from("teachers")
-    .update({ is_active: false, deleted_at: new Date().toISOString(), employee_code: null })
+    .update({ is_active: false, deleted_at: teacher.deleted_at ?? new Date().toISOString(), employee_code: null })
     .eq("id", teacher.id);
   if (tErr) throw new AccountError("Couldn't update the teacher record", 500);
 

@@ -73,3 +73,23 @@ describe("deleting a teacher", () => {
     expect(canRemoveTeacherLogin([])).toBe(false);
   });
 });
+
+describe("cleaning up previously removed teacher logins", () => {
+  it("allows a retry after the teacher role was already removed", () => {
+    expect(canRemoveTeacherLogin([], true)).toBe(true);
+    expect(canRemoveTeacherLogin(["teacher"], true)).toBe(true);
+    expect(canRemoveTeacherLogin([], false)).toBe(false);
+  });
+  it("still protects admin and parent accounts even when the teacher was deleted", () => {
+    for (const roles of [
+      ["admin"],
+      ["parent"],
+      ["teacher", "admin"],
+      ["teacher", "parent"],
+      ["admin", "parent"],
+      ["teacher", "admin", "parent"],
+    ] as const) {
+      expect(canRemoveTeacherLogin([...roles], true)).toBe(false);
+    }
+  });
+});

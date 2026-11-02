@@ -35,13 +35,13 @@ export function isManageableParent(targetRoles: Role[]): boolean {
 }
 
 /**
- * A teacher login may only be removed when the account is purely a teacher account.
+ * Allow pure teacher accounts, or role-free accounts with an already deleted teacher record.
  * Admins are never touched, and an account that is also a parent keeps its login so
  * the family isn't signed out — the admin must resolve the mix first.
  */
-export function canRemoveTeacherLogin(targetRoles: Role[]): boolean {
+export function canRemoveTeacherLogin(targetRoles: Role[], alreadyDeleted = false): boolean {
   return (
-    targetRoles.includes("teacher") &&
+    (targetRoles.includes("teacher") || (alreadyDeleted && targetRoles.length === 0)) &&
     !targetRoles.includes("admin") &&
     !targetRoles.includes("parent")
   );
