@@ -22,6 +22,7 @@ import {
   type Role,
 } from "@/lib/account-rules";
 import { parentAlias } from "@/lib/parent-domain";
+import { teacherJoiningDate, teacherQualification } from "@/lib/teacher-details-input";
 
 export class AccountError extends Error {
   constructor(
@@ -41,6 +42,8 @@ const schemas = {
     fullName: z.string().trim().min(2).max(120),
     email: z.string().trim().email().max(160),
     password: z.string().min(8).max(72),
+    joiningDate: teacherJoiningDate.optional(),
+    educationalQualification: teacherQualification.optional(),
     employeeCode: z.string().trim().max(20).optional(),
     phone: phone.optional(),
   }),
@@ -444,7 +447,12 @@ export async function executeAccountAction(
         await sb.from("user_roles").upsert({ user_id: id, role: "teacher" }, { onConflict: "user_id,role" });
         const { error: tErr } = await sb
           .from("teachers")
-          .insert({ profile_id: id, ...(d.employeeCode ? { employee_code: d.employeeCode } : {}) });
+          .insert({
+            profile_id: id,
+            ...(d.employeeCode ? { employee_code: d.employeeCode } : {}),
+            ...(d.joiningDate ? { joining_date: d.joiningDate } : {}),
+            ...(d.educationalQualification ? { educational_qualification: d.educationalQualification } : {}),
+          });
         if (tErr) {
           throw new AccountError(
             tErr.code === "23505" ? "That employee code is already used by another teacher" : "Couldn't save the teacher record",
@@ -620,3 +628,4 @@ export function clientIpFrom(request: Request | undefined): string | null {
     null
   );
 }
+

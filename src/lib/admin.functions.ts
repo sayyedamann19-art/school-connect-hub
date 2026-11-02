@@ -2,6 +2,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import type { AccountAction } from "@/lib/account-rules";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { teacherJoiningDate, teacherQualification } from "@/lib/teacher-details-input";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -195,6 +196,8 @@ export type AdminTeacher = {
   id: string;
   profile_id: string;
   employee_code: string | null;
+  joining_date: string | null;
+  educational_qualification: string | null;
   is_active: boolean;
   name: string;
   phone: string | null;
@@ -211,7 +214,7 @@ export const adminListTeachers = createServerFn({ method: "GET" })
 
     const { data: teachers, error } = await supabase
       .from("teachers")
-      .select("id, profile_id, employee_code, is_active")
+      .select("id, profile_id, employee_code, is_active, joining_date, educational_qualification")
       .is("deleted_at", null)
       .order("employee_code");
     if (error) throw new Error(error.message);
@@ -259,6 +262,8 @@ export const adminCreateTeacher = createServerFn({ method: "POST" })
         fullName: z.string().trim().min(2).max(120),
         email: z.string().trim().email().max(160),
         password: z.string().min(8).max(72),
+        joiningDate: teacherJoiningDate.optional(),
+        educationalQualification: teacherQualification.optional(),
         employeeCode: z.string().trim().max(20).optional(),
         phone: z
           .string()
@@ -271,6 +276,31 @@ export const adminCreateTeacher = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     // Login creation runs in the account service, which re-verifies the admin role.
     return accountService<{ ok: true }>("create_teacher", data);
+  });
+
+/** Edits employment details only; account credentials and creation dates are untouched. */
+export const adminUpdateTeacherDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    teacherId: z.string().uuid(),
+    joiningDate: teacherJoiningDate.nullable(),
+    educationalQualification: teacherQualification.nullable(),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await assertAdmin(context.supabase as any);
+    const { data: updated, error } = await context.supabase.from("teachers")
+      .update({
+        joining_date: data.joiningDate,
+        educational_qualification: data.educationalQualification || null,
+      })
+      .eq("id", data.teacherId)
+      .is("deleted_at", null)
+      .select("id")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("That teacher no longer exists");
+    return { ok: true };
   });
 
 export const adminSetTeacherActive = createServerFn({ method: "POST" })
@@ -722,4 +752,5 @@ export const adminAttendanceReport = createServerFn({ method: "GET" })
       },
     };
   });
+
 

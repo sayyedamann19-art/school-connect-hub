@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { schoolToday } from "@/lib/teacher-details-input";
 import {
   adminAssignTeacher,
   adminDeleteTeacher,
@@ -209,11 +210,12 @@ function TeachersAdmin() {
       )}
 
       <TeacherDetailsDialog
+        key={viewingId}
         teacher={(teachersQuery.data ?? []).find((teacher) => teacher.id === viewingId) ?? null}
         classes={classesQuery.data ?? []}
         onClose={() => setViewingId(null)}
       />
-      <AddTeacherDialog open={adding} onClose={() => setAdding(false)} />
+      {adding ? <AddTeacherDialog open onClose={() => setAdding(false)} /> : null}
       {deleting ? (
         <Dialog open onOpenChange={(next) => (next ? null : setDeleting(null))}>
           <DialogContent className="sm:max-w-md">
@@ -261,6 +263,8 @@ function AddTeacherDialog({ open, onClose }: { open: boolean; onClose: () => voi
     password: "",
     employeeCode: "",
     phone: "",
+    joiningDate: schoolToday(),
+    educationalQualification: "",
   });
 
   const mutation = useMutation({
@@ -270,6 +274,8 @@ function AddTeacherDialog({ open, onClose }: { open: boolean; onClose: () => voi
           fullName: form.fullName.trim(),
           email: form.email.trim(),
           password: form.password,
+          joiningDate: form.joiningDate,
+          educationalQualification: form.educationalQualification.trim(),
           ...(form.employeeCode.trim() ? { employeeCode: form.employeeCode.trim() } : {}),
           ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
         },
@@ -277,7 +283,7 @@ function AddTeacherDialog({ open, onClose }: { open: boolean; onClose: () => voi
     onSuccess: () => {
       toast.success("Teacher added", { description: "Share the email and password with them." });
       void queryClient.invalidateQueries({ queryKey: ["admin"] });
-      setForm({ fullName: "", email: "", password: "", employeeCode: "", phone: "" });
+      setForm({ fullName: "", email: "", password: "", employeeCode: "", phone: "", joiningDate: schoolToday(), educationalQualification: "" });
       onClose();
     },
     onError: (error) =>
@@ -290,7 +296,7 @@ function AddTeacherDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <Dialog open onOpenChange={(next) => (next ? null : onClose())}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add teacher</DialogTitle>
           <DialogDescription>
@@ -306,12 +312,16 @@ function AddTeacherDialog({ open, onClose }: { open: boolean; onClose: () => voi
               { key: "password", label: "Temporary password", placeholder: "At least 8 characters" },
               { key: "employeeCode", label: "Employee code (optional)", placeholder: "T003" },
               { key: "phone", label: "Phone (optional)", placeholder: "9820011223" },
+              { key: "joiningDate", label: "Date of joining", placeholder: "" },
+              { key: "educationalQualification", label: "Educational qualification (optional)", placeholder: "B.Ed., M.Sc. Mathematics" },
             ] as const
           ).map((field) => (
             <div key={field.key} className="space-y-2">
-              <Label>{field.label}</Label>
+              <Label htmlFor={`add-teacher-${field.key}`}>{field.label}</Label>
               <Input
-                type={field.key === "password" ? "text" : "text"}
+                id={`add-teacher-${field.key}`}
+                type={field.key === "joiningDate" ? "date" : "text"}
+                maxLength={field.key === "educationalQualification" ? 200 : undefined}
                 placeholder={field.placeholder}
                 value={form[field.key]}
                 onChange={(event) =>
@@ -427,4 +437,5 @@ function AssignClassDialog({
     </Dialog>
   );
 }
+
 

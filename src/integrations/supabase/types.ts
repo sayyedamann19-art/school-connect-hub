@@ -710,6 +710,8 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          joining_date: string | null
+          educational_qualification: string | null
           employee_code: string | null
           id: string
           is_active: boolean
@@ -719,6 +721,8 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          joining_date?: string | null
+          educational_qualification?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
@@ -728,6 +732,8 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          joining_date?: string | null
+          educational_qualification?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
@@ -1035,3 +1041,4 @@ export const Constants = {
     },
   },
 } as const
+
