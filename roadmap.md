@@ -5,8 +5,8 @@
 - [x] TypeScript check, existing vitest suite (92 passed), production build
 - [x] Signed-out visual checks at 390px and desktop (login, staff tab)
 - [x] Restore src/integrations/supabase/types.ts to exact content at 53902f5 (revert unrelated auto-reordering)
-- [x] Re-run typecheck after types.ts restore
-- [ ] Report results + limitations; no publish (user does authenticated checks themselves)
+- [x] Re-run typecheck + production build after types.ts restore (both pass)
+- [x] Run record/deletion check scripts (10 + 8 assertions pass)
 
 ## Constraints from user (2026-11-03)
 - No signing in as any parent/teacher, no session minting, no inspecting private login info
