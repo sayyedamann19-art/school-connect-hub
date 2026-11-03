@@ -104,7 +104,7 @@ function CharacterPage() {
       ) : null}
 
       <section className="card-surface overflow-hidden bg-primary p-5 text-primary-foreground">
-        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-gold">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-gold">
           {t("Current score")}
         </p>
         <p className="metric-number mt-2">{score}</p>

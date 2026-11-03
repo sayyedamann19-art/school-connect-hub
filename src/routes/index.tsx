@@ -120,7 +120,7 @@ function LoginPage() {
               <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-primary-foreground sm:text-3xl">
                 {schoolName}
               </h1>
-              <p className="mt-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-gold">
+              <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
                 {schoolMotto}
               </p>
             </div>
