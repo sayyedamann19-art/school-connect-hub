@@ -570,51 +570,51 @@ export type Database = {
       }
       students: {
         Row: {
-          address: string | null
           class_id: string | null
-          contact_number: string | null
           created_at: string
+          mother_name: string | null
+          address: string | null
+          contact_number: string | null
           date_of_birth: string | null
           full_name: string
           gr_number: string
           height_cm: number | null
           id: string
           is_active: boolean
-          mother_name: string | null
           photo_path: string | null
           roll_number: string | null
           updated_at: string
           weight_kg: number | null
         }
         Insert: {
-          address?: string | null
           class_id?: string | null
-          contact_number?: string | null
           created_at?: string
+          mother_name?: string | null
+          address?: string | null
+          contact_number?: string | null
           date_of_birth?: string | null
           full_name: string
           gr_number: string
           height_cm?: number | null
           id?: string
           is_active?: boolean
-          mother_name?: string | null
           photo_path?: string | null
           roll_number?: string | null
           updated_at?: string
           weight_kg?: number | null
         }
         Update: {
-          address?: string | null
           class_id?: string | null
-          contact_number?: string | null
           created_at?: string
+          mother_name?: string | null
+          address?: string | null
+          contact_number?: string | null
           date_of_birth?: string | null
           full_name?: string
           gr_number?: string
           height_cm?: number | null
           id?: string
           is_active?: boolean
-          mother_name?: string | null
           photo_path?: string | null
           roll_number?: string | null
           updated_at?: string
@@ -719,33 +719,33 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          joining_date: string | null
           educational_qualification: string | null
           employee_code: string | null
           id: string
           is_active: boolean
-          joining_date: string | null
           profile_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          joining_date?: string | null
           educational_qualification?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
-          joining_date?: string | null
           profile_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           deleted_at?: string | null
+          joining_date?: string | null
           educational_qualification?: string | null
           employee_code?: string | null
           id?: string
           is_active?: boolean
-          joining_date?: string | null
           profile_id?: string
           updated_at?: string
         }
@@ -1050,3 +1050,4 @@ export const Constants = {
     },
   },
 } as const
+
