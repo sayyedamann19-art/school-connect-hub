@@ -10,7 +10,7 @@ import {
 } from "@/lib/attendance-register";
 import { schoolToday } from "@/lib/student-details";
 
-export const adminClassAttendanceRegister = createServerFn({ method: "GET" })
+export const getClassAttendanceRegister = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
@@ -28,8 +28,29 @@ export const adminClassAttendanceRegister = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
     const admin = await sb.rpc("is_admin");
-    if (admin.error || !admin.data)
-      throw new Error("Only administrators can print class attendance registers");
+    if (admin.error) throw new Error("Could not verify register access");
+    if (!admin.data) {
+      const teacher = await sb.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "teacher",
+      });
+      if (teacher.error || !teacher.data)
+        throw new Error(
+          "Only administrators and assigned teachers can print class attendance registers",
+        );
+      const activeTeacher = await sb
+        .from("teachers")
+        .select("id")
+        .eq("profile_id", context.userId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (activeTeacher.error || !activeTeacher.data)
+        throw new Error("Register access requires an active teacher account");
+      const assignment = await sb.rpc("teaches_class", { _class_id: data.classId });
+      if (assignment.error || !assignment.data)
+        throw new Error("You are not assigned to this class");
+    }
     const classResult = await sb
       .from("classes")
       .select("id, name, division, academic_year")

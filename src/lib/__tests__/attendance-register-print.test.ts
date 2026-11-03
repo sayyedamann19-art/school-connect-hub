@@ -8,7 +8,7 @@ import {
   type RegisterStudent,
 } from "../attendance-register";
 
-vi.mock("@/lib/attendance-register.functions", () => ({ adminClassAttendanceRegister: vi.fn() }));
+vi.mock("@/lib/attendance-register.functions", () => ({ getClassAttendanceRegister: vi.fn() }));
 import { ClassRegisterPages } from "@/components/students/class-attendance-register";
 
 const names = [
