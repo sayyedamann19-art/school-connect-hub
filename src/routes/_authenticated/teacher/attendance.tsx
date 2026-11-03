@@ -273,7 +273,7 @@ function TeacherAttendancePage() {
                         setMarks((current) => ({ ...current, [student.id]: option.state }))
                       }
                       className={cn(
-                        "flex flex-col items-center gap-1 rounded-xl border py-2 text-[0.6875rem] font-semibold transition-colors",
+                        "flex flex-col items-center gap-1 rounded-xl border py-2 text-xs font-semibold transition-colors",
                         active
                           ? cn("border-transparent", option.active)
                           : "border-border bg-surface text-muted-foreground hover:text-foreground",

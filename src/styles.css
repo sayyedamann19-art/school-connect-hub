@@ -12,7 +12,11 @@
  */
 
 @theme inline {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  /* Screen UI uses Inter; printed marksheets pin Plus Jakarta Sans explicitly. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Readability floor: text-xs renders at 14px instead of 12px. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
@@ -228,6 +232,8 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -279,17 +285,17 @@
 }
 
 @utility meta-text {
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: 0.875rem;
+  line-height: 1.45;
   font-weight: 500;
   color: var(--color-muted-foreground);
   letter-spacing: 0.01em;
 }
 
 @utility eyebrow {
-  font-size: 0.6875rem;
+  font-size: 0.875rem;
   font-weight: 650;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }

@@ -40,7 +40,7 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
           {appName}
         </p>
         {!compact ? (
-          <p className="truncate text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="truncate text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
             {schoolMotto}
           </p>
         ) : null}
@@ -120,7 +120,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="space-y-5">
       {groups.map((group) => (
         <div key={group.name} className="space-y-1">
-          <p className="px-3 pb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {t(group.name)}
           </p>
           {group.items.map((item) => (
@@ -199,7 +199,7 @@ function MobileNavBar() {
               key={item.to}
               to={item.to}
               {...(bottomChildId ? { search: { child: bottomChildId } } : {})}
-              className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[0.6875rem] font-semibold"
+              className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-xs font-semibold"
             >
               <span
                 className={cn(
