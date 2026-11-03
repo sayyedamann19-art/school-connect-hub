@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SectionCard } from "@/components/common/section-card";
-import { adminClassAttendanceRegister } from "@/lib/attendance-register.functions";
+import { getClassAttendanceRegister } from "@/lib/attendance-register.functions";
 import {
   paginateRegisterRows,
   validRegisterMonth,
@@ -203,8 +203,8 @@ function RegisterPreview({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const query = useQuery({
-    queryKey: ["admin", "class-attendance-register", classId, month],
-    queryFn: () => adminClassAttendanceRegister({ data: { classId, month } }),
+    queryKey: ["class-attendance-register", classId, month],
+    queryFn: () => getClassAttendanceRegister({ data: { classId, month } }),
     gcTime: 0,
     staleTime: 0,
     retry: false,

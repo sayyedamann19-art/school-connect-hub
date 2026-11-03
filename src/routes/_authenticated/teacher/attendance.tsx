@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState, ErrorState, LoadingCards } from "@/components/common/states";
+import { ClassAttendanceRegister } from "@/components/students/class-attendance-register";
 import { StudentAvatar } from "@/components/common/student-card";
 import { RoleGate } from "@/components/layout/role-gate";
 import { Button } from "@/components/ui/button";
@@ -51,8 +52,18 @@ const states: {
   { state: "present", label: "Present", icon: Check, active: "bg-teal text-teal-foreground" },
   { state: "absent", label: "Absent", icon: X, active: "bg-danger text-danger-foreground" },
   { state: "late", label: "Late", icon: Clock, active: "bg-warning text-warning-foreground" },
-  { state: "left_early", label: "Left early", icon: LogOut, active: "bg-info text-info-foreground" },
-  { state: "other", label: "Other", icon: MoreHorizontal, active: "bg-primary text-primary-foreground" },
+  {
+    state: "left_early",
+    label: "Left early",
+    icon: LogOut,
+    active: "bg-info text-info-foreground",
+  },
+  {
+    state: "other",
+    label: "Other",
+    icon: MoreHorizontal,
+    active: "bg-primary text-primary-foreground",
+  },
 ];
 
 function todayKey() {
@@ -202,6 +213,10 @@ function TeacherAttendancePage() {
           />
         </label>
       </div>
+
+      {activeClass ? (
+        <ClassAttendanceRegister key={activeClass.id} classId={activeClass.id} />
+      ) : null}
 
       <div className="card-quiet flex items-center justify-between gap-3 p-4">
         <p className="meta-text">
