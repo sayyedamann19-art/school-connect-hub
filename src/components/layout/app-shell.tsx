@@ -40,7 +40,7 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
           {appName}
         </p>
         {!compact ? (
-          <p className="truncate text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="whitespace-normal text-xs font-medium leading-snug uppercase tracking-[0.04em] text-muted-foreground">
             {schoolMotto}
           </p>
         ) : null}
