@@ -1,6 +1,5 @@
 // Direct Firebase Cloud Messaging access for hosts (e.g. Cloudflare) without
 // Lovable's gateway. Uses the FIREBASE_SERVICE_ACCOUNT server secret only.
-export const UPDATES_TOPIC = "school-updates";
 
 type ServiceAccount = { client_email: string; private_key: string; project_id: string };
 
@@ -23,7 +22,28 @@ function b64url(input: ArrayBuffer | string): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function getAccessToken(sa: ServiceAccount): Promise<string> {
+let cached: { email: string; key: string; token: Promise<string>; expires: number } | undefined;
+function getAccessToken(sa: ServiceAccount): Promise<string> {
+  if (
+    cached &&
+    cached.email === sa.client_email &&
+    cached.key === sa.private_key &&
+    cached.expires > Date.now()
+  )
+    return cached.token;
+  const entry = {
+    email: sa.client_email,
+    key: sa.private_key,
+    token: requestAccessToken(sa),
+    expires: Date.now() + 50 * 60_000,
+  };
+  cached = entry;
+  void entry.token.catch(() => {
+    if (cached === entry) cached = undefined;
+  });
+  return entry.token;
+}
+async function requestAccessToken(sa: ServiceAccount): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claims = b64url(
@@ -45,7 +65,11 @@ async function getAccessToken(sa: ServiceAccount): Promise<string> {
     ["sign"],
   );
   const unsigned = `${header}.${claims}`;
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned));
+  const sig = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(unsigned),
+  );
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -58,41 +82,26 @@ async function getAccessToken(sa: ServiceAccount): Promise<string> {
   return ((await res.json()) as { access_token: string }).access_token;
 }
 
-/** Adds or removes device tokens from the updates topic. */
-export async function setTopicMembership(sa: ServiceAccount, tokens: string[], subscribe: boolean) {
-  if (tokens.length === 0) return;
-  const accessToken = await getAccessToken(sa);
-  const res = await fetch(`https://iid.googleapis.com/iid/v1:${subscribe ? "batchAdd" : "batchRemove"}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      access_token_auth: "true",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ to: `/topics/${UPDATES_TOPIC}`, registration_tokens: tokens.slice(0, 1000) }),
-  });
-  if (!res.ok) throw new Error(`Topic update failed [${res.status}]: ${await res.text()}`);
-}
-
-/** Sends one message to every device in the updates topic. */
-export async function sendToTopic(
+/** Send to a device selected by the server after checking current role and preferences. */
+export async function sendToDevice(
   sa: ServiceAccount,
-  message: { title: string; body: string; updateId: string },
+  message: { title: string; body: string; updateId: string; token: string; path?: string },
 ) {
   const accessToken = await getAccessToken(sa);
-  const res = await fetch(
-    `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          topic: UPDATES_TOPIC,
-          notification: { title: message.title, body: message.body.slice(0, 180) },
-          data: { updateId: message.updateId, path: "/parent/notifications" },
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        token: message.token,
+        notification: { title: message.title, body: message.body.slice(0, 180) },
+        webpush: {
+          headers: { Urgency: "high" },
+          notification: { icon: "/icon-192.png", tag: message.updateId },
         },
-      }),
-    },
-  );
+        data: { updateId: message.updateId, path: message.path ?? "/parent/notifications" },
+      },
+    }),
+  });
   if (!res.ok) throw new Error(`FCM send failed [${res.status}]: ${await res.text()}`);
 }

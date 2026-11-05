@@ -26,7 +26,6 @@ export function usePushPermission() {
       return;
     }
     setState(Notification.permission as PermissionState);
-    if (window.localStorage.getItem(TOKEN_KEY)) setPushStatus("registered");
   }, []);
 
   const requestPermission = useCallback(async () => {
@@ -41,23 +40,33 @@ export function usePushPermission() {
     setRegistering(true);
     try {
       const result = await enablePush();
-      setPushStatus(result.status);
       if (result.status === "registered") {
+        await registerPushToken({ data: { token: result.token } });
         window.localStorage.setItem(TOKEN_KEY, result.token);
         window.localStorage.setItem(ASKED_KEY, "1");
         setState("granted");
-        await registerPushToken({ data: { token: result.token } });
       } else if (result.status === "denied") {
         setState("denied");
       }
+      setPushStatus(result.status);
       return result.status;
     } catch {
-      setPushStatus("not-configured");
-      return "not-configured";
+      setPushStatus("failed");
+      return "failed";
     } finally {
       setRegistering(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (
+      "Notification" in window &&
+      Notification.permission === "granted" &&
+      window.localStorage.getItem(TOKEN_KEY)
+    ) {
+      void enableClosedAppAlerts();
+    }
+  }, [enableClosedAppAlerts]);
 
   /** Ask once on first open, after the user is signed in. */
   const requestOnFirstOpen = useCallback(async () => {
@@ -67,5 +76,12 @@ export function usePushPermission() {
     await requestPermission();
   }, [requestPermission]);
 
-  return { state, pushStatus, registering, requestPermission, enableClosedAppAlerts, requestOnFirstOpen };
+  return {
+    state,
+    pushStatus,
+    registering,
+    requestPermission,
+    enableClosedAppAlerts,
+    requestOnFirstOpen,
+  };
 }

@@ -103,6 +103,28 @@ export function useSignOut() {
   return async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    // Push cleanup cannot prevent sign-out; invalidating the local subscription also
+    // protects shared devices when the notification server is unavailable.
+    try {
+      const token = window.localStorage.getItem("dawn-breakers:push-token");
+      if (token) {
+        try {
+          const { unregisterPushToken } = await import("@/lib/push.functions");
+          await unregisterPushToken({ data: { token } });
+        } catch {
+          /* Continue with local cleanup and sign-out. */
+        }
+        try {
+          const { disconnectPushDevice } = await import("@/lib/push");
+          await disconnectPushDevice();
+        } catch {
+          /* The browser may already have removed its subscription. */
+        }
+        window.localStorage.removeItem("dawn-breakers:push-token");
+      }
+    } catch {
+      /* Unavailable browser storage cannot prevent sign-out. */
+    }
     await supabase.auth.signOut();
     navigate({ to: "/", replace: true });
   };

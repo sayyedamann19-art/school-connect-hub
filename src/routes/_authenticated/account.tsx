@@ -116,7 +116,9 @@ function AccountPage() {
 
       <SectionCard
         title={t("Change password")}
-        description={t("Optional. Until you change it, your registered phone number remains your password.")}
+        description={t(
+          "Optional. Until you change it, your registered phone number remains your password.",
+        )}
       >
         <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
           <div className="space-y-2">
@@ -249,12 +251,35 @@ function NotificationSettings() {
         ) : null}
         {on && push.pushStatus === "open-in-new-tab" ? (
           <p className="meta-text">
-            {t("Open the app in its own browser tab (or the installed app) to turn on closed-app alerts.")}
+            {t(
+              "Open the app in its own browser tab (or the installed app) to turn on closed-app alerts.",
+            )}
+          </p>
+        ) : null}
+        {on && push.pushStatus === "not-configured" ? (
+          <p className="meta-text" role="status">
+            {t(
+              "School notifications are not connected yet. Please contact the school administrator.",
+            )}
+          </p>
+        ) : null}
+        {on && push.pushStatus === "failed" ? (
+          <p className="meta-text" role="status">
+            {t("Couldn't turn on device alerts. Please try again.")}
+          </p>
+        ) : null}
+        {on && push.pushStatus === "unsupported" ? (
+          <p className="meta-text" role="status">
+            {t(
+              "This browser does not support device alerts. On iPhone or iPad, add the app to your Home Screen and open it there, then try again.",
+            )}
           </p>
         ) : null}
         {on && push.state === "denied" ? (
           <p className="meta-text">
-            {t("Device alerts are blocked in your browser settings. You'll still see pop-ups inside the app.")}
+            {t(
+              "Device alerts are blocked in your browser settings. Allow notifications for this site to enable them. School updates remain available inside the app.",
+            )}
           </p>
         ) : null}
       </div>
