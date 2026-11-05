@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { sendUpdatePushNotifications, syncOwnTopicMembership } from "@/lib/push.functions";
+import { sendUpdatePushNotifications } from "@/lib/push.functions";
 
 export type UpdateCategory = "notice" | "holiday";
 
@@ -331,7 +331,6 @@ export const setUpdateNotificationPref = createServerFn({ method: "POST" })
       .update({ notify_updates: data.notifyUpdates })
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
-    await syncOwnTopicMembership(context.supabase as never, context.userId, data.notifyUpdates);
     return { ok: true };
   });
 
@@ -379,7 +378,8 @@ export const listStaffInbox = createServerFn({ method: "GET" })
         _update_ids: rows.map((r) => r.id),
       });
       if (sErr) throw new Error(sErr.message);
-      for (const x of s ?? []) senders.set(x.update_id, { name: x.sender_name, isAdmin: x.sender_is_admin });
+      for (const x of s ?? [])
+        senders.set(x.update_id, { name: x.sender_name, isAdmin: x.sender_is_admin });
     }
     const isAdminMap = new Map(Array.from(senders, ([k, v]) => [k, v.isAdmin]));
     return staffInboxFilter(rows, isAdminMap, context.userId, role, active).map(

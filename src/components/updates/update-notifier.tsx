@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { useNotifyPref, useParentUpdates } from "@/hooks/use-parent-updates";
+import { usePushPermission } from "@/hooks/use-push-permission";
 import { useStaffUpdates } from "@/hooks/use-staff-updates";
 import { normalizeCategory } from "@/lib/updates.functions";
 import { useT } from "@/lib/i18n";
@@ -29,6 +30,7 @@ export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) 
   const t = useT();
   const navigate = useNavigate();
   const pref = useNotifyPref();
+  usePushPermission();
   const parentData = useParentUpdates(!staff);
   const staffData = useStaffUpdates(Boolean(staff));
   const { unread, updates } = staff ? staffData : parentData;
@@ -72,28 +74,25 @@ export function UpdateNotifier({ staff }: { staff?: "admin" | "teacher" } = {}) 
         duration: 10_000,
         action: { label: t("Open"), onClick: open },
       });
-      if (
-        document.visibilityState === "hidden" &&
-        "Notification" in window &&
-        Notification.permission === "granted"
-      ) {
-        try {
-          const n = new Notification(t("{label}: {title}", { label, title: u.title }), { body: u.body, tag: u.id });
-          n.onclick = () => {
-            window.focus();
-            open();
-          };
-        } catch {
-          // Some mobile browsers only allow notifications from a service worker.
-        }
-      }
+      // Background OS notifications come from the push worker. Polling this page
+      // must not display a second OS notification for the same update.
     }
     if (fresh.length > show.length) {
       toast(t("{n} more new updates", { n: fresh.length - show.length }), {
         action: { label: t("View all"), onClick: open },
       });
     }
-  }, [unread, updates.isSuccess, updates.data, pref.isSuccess, pref.data, navigate, staff, SHOWN_KEY, t]);
+  }, [
+    unread,
+    updates.isSuccess,
+    updates.data,
+    pref.isSuccess,
+    pref.data,
+    navigate,
+    staff,
+    SHOWN_KEY,
+    t,
+  ]);
 
   return null;
 }
